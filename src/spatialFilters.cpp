@@ -10,45 +10,59 @@ cv::Mat boxBlurQ15(const cv::Mat& gray) {
 
     cv::Mat output(gray.size(), CV_8UC1);
 
-    constexpr int KERNEL_SIZE = 5;
-    constexpr int RADIUS = KERNEL_SIZE / 2;
+    constexpr int RADIUS = 2;
     constexpr int Q = 15;
     constexpr int ROUNDING = 1 << (Q - 1);
 
-    // Kernel promedio 5x5 en Q1.15 corregido en DC.
-    // Suma = 32768 = 2^15
-    constexpr int16_t h[KERNEL_SIZE][KERNEL_SIZE] = {
-        {1311, 1311, 1311, 1311, 1311},
-        {1311, 1311, 1311, 1311, 1311},
-        {1311, 1311, 1304, 1311, 1311},
-        {1311, 1311, 1311, 1311, 1311},
-        {1311, 1311, 1311, 1311, 1311}
-    };
+    constexpr int COEFF_BASE = 1311;
+    constexpr int CENTER_CORRECTION = 7;
 
-    for (int y = 0; y < gray.rows; y++) {
-        for (int x = 0; x < gray.cols; x++) {
+    const int rows = gray.rows;
+    const int cols = gray.cols;
 
-            int32_t acc = 0;
+    for (int y = 0; y < rows; y++) {
+        uint8_t* outRow = output.ptr<uint8_t>(y);
+
+        for (int x = 0; x < cols; x++) {
+            int sum = 0;
 
             for (int ky = -RADIUS; ky <= RADIUS; ky++) {
+                int yy = y + ky;
+
+                if (yy < 0) {
+                    yy = 0;
+                } else if (yy >= rows) {
+                    yy = rows - 1;
+                }
+
+                const uint8_t* inRow = gray.ptr<uint8_t>(yy);
+
                 for (int kx = -RADIUS; kx <= RADIUS; kx++) {
+                    int xx = x + kx;
 
-                    int yy = std::clamp(y + ky, 0, gray.rows - 1);
-                    int xx = std::clamp(x + kx, 0, gray.cols - 1);
+                    if (xx < 0) {
+                        xx = 0;
+                    } else if (xx >= cols) {
+                        xx = cols - 1;
+                    }
 
-                    uint8_t pixel = gray.at<uint8_t>(yy, xx);
-                    int16_t coeff = h[ky + RADIUS][kx + RADIUS];
-
-                    acc += static_cast<int32_t>(pixel) * static_cast<int32_t>(coeff);
+                    sum += inRow[xx];
                 }
             }
 
-            // Pasar de Q1.15 a entero de 8 bits con redondeo
+            int center = gray.ptr<uint8_t>(y)[x];
+
+            int32_t acc = COEFF_BASE * sum - CENTER_CORRECTION * center;
+
             int32_t value = (acc + ROUNDING) >> Q;
 
-            value = std::clamp(value, 0, 255);
+            if (value < 0) {
+                value = 0;
+            } else if (value > 255) {
+                value = 255;
+            }
 
-            output.at<uint8_t>(y, x) = static_cast<uint8_t>(value);
+            outRow[x] = static_cast<uint8_t>(value);
         }
     }
 
