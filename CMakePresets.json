@@ -1,0 +1,44 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "default",
+      "displayName": "Linux/macOS - OpenCV del sistema",
+      "description": "Usa el OpenCV instalado via apt/brew. No requiere vcpkg.",
+      "binaryDir": "${sourceDir}/build",
+      "condition": {
+        "type": "notEquals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
+      "name": "windows-vcpkg",
+      "displayName": "Windows - MSVC + vcpkg",
+      "description": "Requiere la variable de entorno VCPKG_ROOT apuntando a tu instalacion de vcpkg.",
+      "generator": "Visual Studio 17 2022",
+      "architecture": "x64",
+      "binaryDir": "${sourceDir}/build",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "default",
+      "configurePreset": "default"
+    },
+    {
+      "name": "windows-vcpkg",
+      "configurePreset": "windows-vcpkg",
+      "configuration": "Debug"
+    }
+  ]
+}

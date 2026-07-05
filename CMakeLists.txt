@@ -5,10 +5,14 @@ project(VideoDSP)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(OpenCV_DIR "C:/Users/palom/Downloads/opencv/build/x64/vc16/lib")
-
+# La ubicación de OpenCV ya NO está hardcodeada acá.
+# CMake va a buscar OpenCV instalado en el sistema.
+# Si no lo encuentra automáticamente, pasar la ruta al invocar cmake, ej:
+#   cmake -B build -S . -DOpenCV_DIR="C:/ruta/a/opencv/build"
 find_package(OpenCV REQUIRED)
 
+# frequencyFilters.cpp todavía está vacío (ver Roadmap en README).
+# Cuando se implemente, agregarlo acá a la lista de fuentes.
 add_executable(VideoDSP
     src/main.cpp
     src/camera.cpp
