@@ -10,6 +10,9 @@
     <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\videoProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\spatialFilters.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="C:\Users\palom\Desktop\TPFINAL_LABO3\CMakeLists.txt" />

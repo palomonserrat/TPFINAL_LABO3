@@ -21,10 +21,7 @@ int main() {
 
     std::cout << "Controles:" << std::endl;
     std::cout << "0 - Original gris" << std::endl;
-    std::cout << "1 - Blur promedio" << std::endl;
-    std::cout << "2 - Gaussian blur" << std::endl;
-    std::cout << "3 - Sobel" << std::endl;
-    std::cout << "4 - Laplacian" << std::endl;
+    std::cout << "1 - Box blur 5x5 Q1.15" << std::endl;
     std::cout << "q o ESC - Salir" << std::endl;
 
     while (true) {
@@ -46,7 +43,7 @@ int main() {
             break;
         }
 
-        if (key >= '0' && key <= '4') {
+        if (key == '0' || key == '1') {
             mode = key - '0';
             std::cout << "Modo cambiado a: " << mode << std::endl;
         }

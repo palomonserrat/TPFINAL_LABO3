@@ -383,6 +383,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
     <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\main.cpp" />
     <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\camera.cpp" />
     <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\videoProcessor.cpp" />
+    <ClCompile Include="C:\Users\palom\Desktop\TPFINAL_LABO3\src\spatialFilters.cpp" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

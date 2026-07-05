@@ -13,6 +13,7 @@ add_executable(VideoDSP
     src/main.cpp
     src/camera.cpp
     src/videoProcessor.cpp
+    src/spatialFilters.cpp
 )
 
 target_include_directories(VideoDSP PRIVATE
