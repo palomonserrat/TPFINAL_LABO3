@@ -28,6 +28,7 @@ int main() {
     std::cout << "Controles:" << std::endl;
     std::cout << "0 - Original gris" << std::endl;
     std::cout << "1 - Box blur 5x5 Q1.15" << std::endl;
+    std::cout << "2 - Laplaciano 3x3" << std::endl;
     std::cout << "q o ESC - Salir" << std::endl;
 
     while (true) {
@@ -86,7 +87,7 @@ int main() {
         }
 
         // Cambio de modo
-        if (key >= '0' && key <= '1') {
+        if (key >= '0' && key <= '2') {
             mode = key - '0';
             std::cout << "Modo cambiado a: " << mode << std::endl;
         }

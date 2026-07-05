@@ -4,4 +4,5 @@
 
 namespace SpatialFilters {
     cv::Mat boxBlurQ15(const cv::Mat& gray);
+    cv::Mat laplacian3x3(const cv::Mat& gray);
 }

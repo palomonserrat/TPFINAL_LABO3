@@ -11,6 +11,9 @@ cv::Mat VideoProcessor::process(const cv::Mat& frame, int mode) {
         case 1:
             return SpatialFilters::boxBlurQ15(gray);
 
+        case 2:
+            return SpatialFilters::laplacian3x3(gray);
+
         default:
             return gray;
     }
