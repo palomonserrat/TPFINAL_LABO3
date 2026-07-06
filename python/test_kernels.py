@@ -5,6 +5,7 @@ from kernels import (
     box_blur_kernel,
     quantize_q15_dc_corrected,
     laplacian_kernel,
+    sharpening_kernel,
 )
 
 from frequency_response import (
@@ -18,7 +19,8 @@ def main():
     # Cambiar entre:
     # "box_blur"
     # "laplacian"
-    filter_name = "laplacian"
+    # "sharpening"
+    filter_name = "sharpening"
 
     if filter_name == "box_blur":
         kernel_float = box_blur_kernel(size=5)
@@ -39,12 +41,23 @@ def main():
 
     elif filter_name == "laplacian":
         kernel_float = laplacian_kernel()
-
         kernel_fixed = kernel_float.copy()
 
         title = "Laplaciano 3x3"
 
         print("Kernel Laplaciano:")
+        print(kernel_fixed)
+
+        print()
+        print("Suma de coeficientes:", np.sum(kernel_fixed))
+
+    elif filter_name == "sharpening":
+        kernel_float = sharpening_kernel()
+        kernel_fixed = kernel_float.copy()
+
+        title = "Sharpening 3x3"
+
+        print("Kernel sharpening:")
         print(kernel_fixed)
 
         print()

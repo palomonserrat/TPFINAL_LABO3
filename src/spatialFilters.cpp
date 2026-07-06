@@ -131,4 +131,77 @@ cv::Mat laplacian3x3(const cv::Mat& gray) {
     return output;
 }
 
+cv::Mat sharpening3x3(const cv::Mat& gray) {
+    CV_Assert(gray.type() == CV_8UC1);
+
+    cv::Mat output(gray.size(), CV_8UC1);
+
+    const int rows = gray.rows;
+    const int cols = gray.cols;
+
+    // Intensidad del sharpening.
+    // alpha = 1 -> kernel [0 -1 0; -1 5 -1; 0 -1 0]
+    // alpha = 2 -> kernel [0 -2 0; -2 9 -2; 0 -2 0]
+    constexpr int alpha = 2;
+
+    const int centerCoeff = 1 + 4 * alpha;
+    const int neighborCoeff = alpha;
+
+    for (int y = 0; y < rows; y++) {
+        uint8_t* outRow = output.ptr<uint8_t>(y);
+
+        for (int x = 0; x < cols; x++) {
+            int yUp = y - 1;
+            int yDown = y + 1;
+            int xLeft = x - 1;
+            int xRight = x + 1;
+
+            // Replicación de bordes
+            if (yUp < 0) {
+                yUp = 0;
+            }
+
+            if (yDown >= rows) {
+                yDown = rows - 1;
+            }
+
+            if (xLeft < 0) {
+                xLeft = 0;
+            }
+
+            if (xRight >= cols) {
+                xRight = cols - 1;
+            }
+
+            const uint8_t* rowUp = gray.ptr<uint8_t>(yUp);
+            const uint8_t* rowCenter = gray.ptr<uint8_t>(y);
+            const uint8_t* rowDown = gray.ptr<uint8_t>(yDown);
+
+            int center = rowCenter[x];
+            int up = rowUp[x];
+            int down = rowDown[x];
+            int left = rowCenter[xLeft];
+            int right = rowCenter[xRight];
+
+            int value =
+                centerCoeff * center
+                - neighborCoeff * up
+                - neighborCoeff * down
+                - neighborCoeff * left
+                - neighborCoeff * right;
+
+            // Saturación a rango uint8_t
+            if (value < 0) {
+                value = 0;
+            } else if (value > 255) {
+                value = 255;
+            }
+
+            outRow[x] = static_cast<uint8_t>(value);
+        }
+    }
+
+    return output;
+}
+
 }

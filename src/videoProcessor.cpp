@@ -14,6 +14,9 @@ cv::Mat VideoProcessor::process(const cv::Mat& frame, int mode) {
         case 2:
             return SpatialFilters::laplacian3x3(gray);
 
+        case 3:
+            return SpatialFilters::sharpening3x3(gray);
+
         default:
             return gray;
     }

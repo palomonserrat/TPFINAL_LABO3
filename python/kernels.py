@@ -67,3 +67,21 @@ def laplacian_kernel() -> np.ndarray:
     ], dtype=np.float32)
 
     return kernel
+
+
+def sharpening_kernel() -> np.ndarray:
+    """
+    Crea un kernel de sharpening 3x3.
+
+    Este filtro realza bordes y detalles finos.
+    Puede interpretarse como:
+        identidad + laplaciano
+    """
+
+    kernel = np.array([
+        [0, -1, 0],
+        [-1, 5, -1],
+        [0, -1, 0]
+    ], dtype=np.float32)
+
+    return kernel
