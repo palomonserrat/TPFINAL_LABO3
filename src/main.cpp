@@ -7,14 +7,16 @@
 #include "videoProcessor.hpp"
 #include "metrics.hpp"
 
-int main() {
+int main()
+{
     // Oculta mensajes informativos de OpenCV
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
 
     // Inicialización de la cámara
     Camera camera(0, 640, 480);
 
-    if (!camera.isOpened()) {
+    if (!camera.isOpened())
+    {
         std::cerr << "Error: no se pudo abrir la cámara." << std::endl;
         return -1;
     }
@@ -30,14 +32,22 @@ int main() {
     std::cout << "1 - Box blur 5x5 Q1.15" << std::endl;
     std::cout << "2 - Laplaciano 3x3" << std::endl;
     std::cout << "3 - Sharpening 3x3" << std::endl;
-    std::cout << "4 - FFT pasa-bajos ideal" << std::endl;
+    std::cout << "4 - Pasabajos ideal (frecuencia)" << std::endl;
+    std::cout << "5 - Pasaaltos ideal (frecuencia)" << std::endl;
+    std::cout << "6 - Pasabajos Gaussiano" << std::endl;
+    std::cout << "7 - Pasaaltos Gaussiano" << std::endl;
+    std::cout << "8 - Band-pass" << std::endl;
+    std::cout << "9 - Band-reject" << std::endl;
+    std::cout << "10 - Espectro (magnitud)" << std::endl;
     std::cout << "q o ESC - Salir" << std::endl;
 
-    while (true) {
+    while (true)
+    {
         // Captura de frame
         cv::Mat frame = camera.getFrame();
 
-        if (frame.empty()) {
+        if (frame.empty())
+        {
             std::cerr << "Error: frame vacío." << std::endl;
             break;
         }
@@ -57,8 +67,7 @@ int main() {
         double fps = metrics.getFPS();
         double throughput = metrics.getThroughputMPixelsPerSec(
             output.cols,
-            output.rows
-        );
+            output.rows);
 
         // Texto a mostrar sobre la imagen procesada
         std::string text =
@@ -74,8 +83,7 @@ int main() {
             cv::FONT_HERSHEY_SIMPLEX,
             0.6,
             cv::Scalar(255),
-            2
-        );
+            2);
 
         // Mostrar ventanas
         cv::imshow("Original", frame);
@@ -84,12 +92,14 @@ int main() {
         // Leer teclado
         char key = static_cast<char>(cv::waitKey(1));
 
-        if (key == 'q' || key == 27) { // 27 = ESC
+        if (key == 'q' || key == 27)
+        { // 27 = ESC
             break;
         }
 
         // Cambio de modo
-        if (key >= '0' && key <= '4') {
+        if (key >= '0' && key <= '9')
+        {
             mode = key - '0';
             std::cout << "Modo cambiado a: " << mode << std::endl;
         }
