@@ -1,5 +1,6 @@
 #include "videoProcessor.hpp"
 #include "spatialFilters.hpp"
+#include "frequencyFilters.hpp"
 
 cv::Mat VideoProcessor::process(const cv::Mat& frame, int mode) {
     cv::Mat gray = toGray(frame);
@@ -16,6 +17,9 @@ cv::Mat VideoProcessor::process(const cv::Mat& frame, int mode) {
 
         case 3:
             return SpatialFilters::sharpening3x3(gray);
+        
+        case 4:
+            return FrequencyFilters::idealLowPass(gray, 50);
 
         default:
             return gray;

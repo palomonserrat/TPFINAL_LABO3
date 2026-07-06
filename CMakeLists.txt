@@ -19,6 +19,7 @@ add_executable(VideoDSP
     src/videoProcessor.cpp
     src/spatialFilters.cpp
     src/metrics.cpp
+    src/frequencyFilters.cpp
 )
 
 target_include_directories(VideoDSP PRIVATE
