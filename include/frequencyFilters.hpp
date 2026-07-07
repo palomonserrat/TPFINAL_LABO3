@@ -15,4 +15,5 @@ namespace FrequencyFilters {
 
     // Con fines de visualización
     cv::Mat spectrumMagnitude(const cv::Mat& gray);
+    cv::Mat renderMesh3D(int mode, double cutoff, double bandLow, double bandHigh);
 }

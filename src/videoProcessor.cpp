@@ -2,7 +2,8 @@
 #include "spatialFilters.hpp"
 #include "frequencyFilters.hpp"
 
-cv::Mat VideoProcessor::process(const cv::Mat &frame, int mode)
+
+cv::Mat VideoProcessor::process(const cv::Mat &frame, int mode, const FilterConfig& config)
 {
     cv::Mat gray = toGray(frame);
 
@@ -12,7 +13,8 @@ cv::Mat VideoProcessor::process(const cv::Mat &frame, int mode)
         return gray;
 
     case 1:
-        return SpatialFilters::boxBlurQ15(gray);
+
+        return SpatialFilters::boxBlurQ15(gray); 
 
     case 2:
         return SpatialFilters::laplacian3x3(gray);
@@ -21,22 +23,22 @@ cv::Mat VideoProcessor::process(const cv::Mat &frame, int mode)
         return SpatialFilters::sharpening3x3(gray);
 
     case 4:
-        return FrequencyFilters::idealLowPass(gray, 50);
+        return FrequencyFilters::idealLowPass(gray, static_cast<double>(config.cutoffFreq));
 
     case 5:
-        return FrequencyFilters::idealHighPass(gray, 50);
+        return FrequencyFilters::idealHighPass(gray, static_cast<double>(config.cutoffFreq));
 
     case 6:
-        return FrequencyFilters::gaussianLowPass(gray, 30.0);
+        return FrequencyFilters::gaussianLowPass(gray, static_cast<double>(config.cutoffFreq));
 
     case 7:
-        return FrequencyFilters::gaussianHighPass(gray, 30.0);
+        return FrequencyFilters::gaussianHighPass(gray, static_cast<double>(config.cutoffFreq));
 
     case 8:
-        return FrequencyFilters::bandPass(gray, 20.0, 60.0);
+        return FrequencyFilters::bandPass(gray, static_cast<double>(config.bandLow), static_cast<double>(config.bandHigh));
 
     case 9:
-        return FrequencyFilters::bandReject(gray, 20.0, 60.0);
+        return FrequencyFilters::bandReject(gray, static_cast<double>(config.bandLow), static_cast<double>(config.bandHigh));
 
     default:
         return gray;

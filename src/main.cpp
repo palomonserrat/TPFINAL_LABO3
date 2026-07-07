@@ -2,110 +2,122 @@
 #include <opencv2/core/utils/logger.hpp>
 #include <iostream>
 #include <string>
+#include <vector>
 
 #include "camera.hpp"
 #include "videoProcessor.hpp"
 #include "metrics.hpp"
+#include "frequencyFilters.hpp"
+
+
+const std::vector<std::string> MODE_NAMES = {
+    "Original Gris", "Box Blur Q1.15", "Laplaciano 3x3", "Sharpening 3x3",
+    "Pasa-bajos Ideal", "Pasa-altos Ideal", "Pasa-bajos Gaussiano", 
+    "Pasa-altos Gaussiano", "Band-pass", "Band-reject", "Espectro Puro"
+};
 
 int main()
 {
-    // Oculta mensajes informativos de OpenCV
     cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
 
-    // Inicialización de la cámara
     Camera camera(0, 640, 480);
-
-    if (!camera.isOpened())
-    {
+    if (!camera.isOpened()) {
         std::cerr << "Error: no se pudo abrir la cámara." << std::endl;
         return -1;
     }
 
-    // Inicialización del procesador y métricas
     VideoProcessor processor;
     Metrics metrics;
+    FilterConfig config;
 
-    int mode = 0;
+    // Ventana de controles separada
+    std::string ctrlWin = "Controles";
+    cv::namedWindow(ctrlWin, cv::WINDOW_AUTOSIZE);
+    cv::createTrackbar("Modo (0-10)", ctrlWin, &config.mode, 10);
+    cv::createTrackbar("Kernel Size", ctrlWin, &config.kernelSize, 15);
+    cv::createTrackbar("Frec. Corte", ctrlWin, &config.cutoffFreq, 150);
+    cv::createTrackbar("Banda Baja",  ctrlWin, &config.bandLow, 150);
+    cv::createTrackbar("Banda Alta",  ctrlWin, &config.bandHigh, 150);
 
-    std::cout << "Controles:" << std::endl;
-    std::cout << "0 - Original gris" << std::endl;
-    std::cout << "1 - Box blur 5x5 Q1.15" << std::endl;
-    std::cout << "2 - Laplaciano 3x3" << std::endl;
-    std::cout << "3 - Sharpening 3x3" << std::endl;
-    std::cout << "4 - Pasabajos ideal (frecuencia)" << std::endl;
-    std::cout << "5 - Pasaaltos ideal (frecuencia)" << std::endl;
-    std::cout << "6 - Pasabajos Gaussiano" << std::endl;
-    std::cout << "7 - Pasaaltos Gaussiano" << std::endl;
-    std::cout << "8 - Band-pass" << std::endl;
-    std::cout << "9 - Band-reject" << std::endl;
-    std::cout << "10 - Espectro (magnitud)" << std::endl;
-    std::cout << "q o ESC - Salir" << std::endl;
+    // Variables de control para el throttling y limpieza de ventanas
+    int frameCounter = 0;
+    bool frequencyWindowsActive = false;
+    cv::Mat cachedSpectrum;
+    cv::Mat cachedMesh3D;
 
     while (true)
     {
-        // Captura de frame
         cv::Mat frame = camera.getFrame();
-
-        if (frame.empty())
-        {
-            std::cerr << "Error: frame vacío." << std::endl;
-            break;
-        }
-
-        // Espejar cámara horizontalmente
+        if (frame.empty()) break;
         cv::flip(frame, frame, 1);
 
-        // Medimos el tiempo de procesamiento
+        // Validaciones rápidas
+        if (config.kernelSize % 2 == 0) config.kernelSize++; 
+        if (config.kernelSize < 3) config.kernelSize = 3;
+        if (config.bandLow >= config.bandHigh) config.bandLow = config.bandHigh - 1;
+
+        // 1. PROCESAMIENTO CRÍTICO (A máxima velocidad)
         metrics.start();
-
-        cv::Mat output = processor.process(frame, mode);
-
+        cv::Mat output = processor.process(frame, config.mode, config);
         metrics.stop();
 
-        // Cálculo de métricas
-        double frameTimeMs = metrics.getFrameTimeMs();
-        double fps = metrics.getFPS();
-        double throughput = metrics.getThroughputMPixelsPerSec(
-            output.cols,
-            output.rows);
+        // HUD estético sobre la imagen procesada
+        cv::Mat overlay; output.copyTo(overlay);
+        cv::rectangle(overlay, cv::Rect(0, 0, output.cols, 70), cv::Scalar(0, 0, 0), -1);
+        cv::addWeighted(overlay, 0.5, output, 0.5, 0, output);
 
-        // Texto a mostrar sobre la imagen procesada
-        std::string text =
-            "Mode: " + std::to_string(mode) +
-            " | Lat: " + std::to_string(frameTimeMs) + " ms" +
-            " | FPS: " + std::to_string(fps) +
-            " | MPix/s: " + std::to_string(throughput);
+        std::string statsText = "Lat: " + std::to_string((int)metrics.getFrameTimeMs()) + 
+                                "ms | FPS: " + std::to_string((int)metrics.getFPS());
+        cv::putText(output, "Modo: " + MODE_NAMES[config.mode], cv::Point(15, 30), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
+        cv::putText(output, statsText, cv::Point(15, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
+        cv::putText(output, "Pulsa 'ESC' para SALIR", cv::Point(output.cols - 220, output.rows - 15), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
 
-        cv::putText(
-            output,
-            text,
-            cv::Point(20, 30),
-            cv::FONT_HERSHEY_SIMPLEX,
-            0.6,
-            cv::Scalar(255),
-            2);
-
-        // Mostrar ventanas
+        // Mostrar fuentes en tiempo real
         cv::imshow("Original", frame);
         cv::imshow("Procesado", output);
 
-        // Leer teclado
-        char key = static_cast<char>(cv::waitKey(1));
-
-        if (key == 'q' || key == 27)
-        { // 27 = ESC
-            break;
-        }
-
-        // Cambio de modo
-        if (key >= '0' && key <= '9')
+        // 2. PROCESAMIENTO ANALÍTICO SUBMUESTREADO (Throttling)
+        frameCounter++;
+        
+        if (config.mode >= 4 && config.mode <= 10) 
         {
-            mode = key - '0';
-            std::cout << "Modo cambiado a: " << mode << std::endl;
+            // Solo recalculamos las ventanas pesadas cada 10 frames o si están vacías
+            if (frameCounter % 10 == 0 || cachedSpectrum.empty() || cachedMesh3D.empty()) 
+            {
+                if (config.mode == 10) {
+                    cv::Mat gray;
+                    cv::cvtColor(frame, gray, cv::COLOR_BGR2GRAY);
+                    cachedSpectrum = FrequencyFilters::spectrumMagnitude(gray);
+                } else {
+                    cachedSpectrum = FrequencyFilters::spectrumMagnitude(output);
+                }
+                
+                // Generar el render 3D de la manta del filtro
+                cachedMesh3D = FrequencyFilters::renderMesh3D(config.mode, config.cutoffFreq, config.bandLow, config.bandHigh);
+            }
+
+            // Mostrar ventanas analíticas (hacen refresh visual a aprox. 3-5 FPS, super suave)
+            cv::imshow("Espectro de Frecuencia", cachedSpectrum);
+            cv::imshow("Manta del Filtro 3D", cachedMesh3D);
+            frequencyWindowsActive = true;
+        } 
+        else 
+        {
+            // Si pasamos a filtros espaciales, limpiamos las ventanas extras para no estorbar
+            if (frequencyWindowsActive) {
+                cv::destroyWindow("Espectro de Frecuencia");
+                cv::destroyWindow("Manta del Filtro 3D");
+                cachedSpectrum.release();
+                cachedMesh3D.release();
+                frequencyWindowsActive = false;
+            }
         }
+        
+
+        char key = static_cast<char>(cv::waitKey(1));
+        if (key == 'q' || key == 27) break;
     }
 
     cv::destroyAllWindows();
-
     return 0;
 }

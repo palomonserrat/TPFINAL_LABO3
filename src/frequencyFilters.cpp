@@ -38,7 +38,6 @@ namespace FrequencyFilters
             idftOutput.create(optRows, optCols, CV_32F);
             precomputedMask.create(optRows, optCols, CV_32F);
 
-            
             // Elevamos los radios al cuadrado
             float p1Sq = static_cast<float>(p1 * p1);
             float p2Sq = static_cast<float>(p2 * p2);
@@ -58,7 +57,7 @@ namespace FrequencyFilters
                 {
                     int u = (x <= optCols / 2) ? x : (optCols - x);
 
-                    //Distancia al cuadrado puramente entera. Sin sqrt.
+                    // Distancia al cuadrado puramente entera. Sin sqrt.
                     int distSq = u * u + vSq;
 
                     switch (type)
@@ -244,6 +243,89 @@ namespace FrequencyFilters
         cv::Mat output;
         cropped.convertTo(output, CV_8U);
         return output;
+    }
+
+    cv::Mat FrequencyFilters::renderMesh3D(int mode, double cutoff, double bandLow, double bandHigh)
+    {
+        // Mapeo inteligente: si es filtro de banda usa bandLow/High, si no, usa cutoff
+        double p1 = (mode == 8 || mode == 9) ? bandLow : cutoff;
+        double p2 = (mode == 8 || mode == 9) ? bandHigh : 0.0;
+
+        const int winSize = 400;
+        cv::Mat canvas = cv::Mat::zeros(winSize, winSize, CV_8UC3);
+
+        const int gridSize = 41;
+        const int center = gridSize / 2;
+        cv::Point pts[gridSize][gridSize];
+
+        double p1Sq = p1 * p1;
+        double p2Sq = p2 * p2;
+
+        double alpha = 45.0 * CV_PI / 180.0;
+        double beta = 60.0 * CV_PI / 180.0;
+
+        for (int gY = 0; gY < gridSize; gY++)
+        {
+            for (int gX = 0; gX < gridSize; gX++)
+            {
+                int u = gX - center;
+                int v = gY - center;
+
+                double uReal = u * (150.0 / 20.0);
+                double vReal = v * (150.0 / 20.0);
+                double distSq = uReal * uReal + vReal * vReal;
+
+                double H = 0.0;
+                switch (mode)
+                {
+                case 4: // Ideal Low Pass
+                    H = (distSq <= p1Sq) ? 1.0 : 0.0;
+                    break;
+                case 5: // Ideal High Pass
+                    H = (distSq <= p1Sq) ? 0.0 : 1.0;
+                    break;
+                case 6: // Gaussian Low Pass
+                    H = (p1Sq > 0) ? std::exp(-distSq / (2.0 * p1Sq)) : 0.0;
+                    break;
+                case 7: // Gaussian High Pass
+                    H = (p1Sq > 0) ? 1.0 - std::exp(-distSq / (2.0 * p1Sq)) : 1.0;
+                    break;
+                case 8: // Band Pass
+                    H = (p1Sq > 0 && p2Sq > 0) ? std::exp(-distSq / (2.0 * p2Sq)) - std::exp(-distSq / (2.0 * p1Sq)) : 0.0;
+                    break;
+                case 9: // Band Reject
+                    H = (p1Sq > 0 && p2Sq > 0) ? 1.0 - (std::exp(-distSq / (2.0 * p2Sq)) - std::exp(-distSq / (2.0 * p1Sq))) : 1.0;
+                    break;
+                default:
+                    H = 1.0;
+                    break;
+                }
+
+                double x3D = u * 6.5;
+                double y3D = v * 6.5;
+                double z3D = H * 80.0;
+
+                int x2D = static_cast<int>(x3D * std::cos(alpha) - y3D * std::sin(alpha));
+                int y2D = static_cast<int>(x3D * std::sin(alpha) * std::sin(beta) + y3D * std::cos(alpha) * std::sin(beta) - z3D * std::cos(beta));
+
+                pts[gY][gX].x = winSize / 2 + x2D;
+                pts[gY][gX].y = winSize / 2 + 30 + y2D;
+            }
+        }
+
+        cv::Scalar meshColor(0, 230, 0);
+        for (int gY = 0; gY < gridSize; gY++)
+        {
+            for (int gX = 0; gX < gridSize; gX++)
+            {
+                if (gX < gridSize - 1)
+                    cv::line(canvas, pts[gY][gX], pts[gY][gX + 1], meshColor, 1, cv::LINE_AA);
+                if (gY < gridSize - 1)
+                    cv::line(canvas, pts[gY][gX], pts[gY + 1][gX], meshColor, 1, cv::LINE_AA);
+            }
+        }
+
+        return canvas;
     }
 
 }
