@@ -12,7 +12,7 @@
 
 const std::vector<std::string> MODE_NAMES = {
     "Original Gris", "Box Blur Q1.15", "Laplaciano 3x3", "Sharpening 3x3",
-    "Pasa-bajos Ideal", "Pasa-altos Ideal", "Pasa-bajos Gaussiano", 
+    "Pasa-bajos Ideal", "Pasa-altos Ideal", "Pasa-bajos Gaussiano",
     "Pasa-altos Gaussiano", "Band-pass", "Band-reject", "Espectro Puro"
 };
 
@@ -45,6 +45,13 @@ int main()
     cv::Mat cachedSpectrum;
     cv::Mat cachedMesh3D;
 
+    // Variables para detectar cambios de modo/parámetros
+    int lastMode = config.mode;
+    int lastKernelSize = config.kernelSize;
+    int lastCutoffFreq = config.cutoffFreq;
+    int lastBandLow = config.bandLow;
+    int lastBandHigh = config.bandHigh;
+
     while (true)
     {
         cv::Mat frame = camera.getFrame();
@@ -52,37 +59,135 @@ int main()
         cv::flip(frame, frame, 1);
 
         // Validaciones rápidas
-        if (config.kernelSize % 2 == 0) config.kernelSize++; 
+        if (config.kernelSize % 2 == 0) config.kernelSize++;
         if (config.kernelSize < 3) config.kernelSize = 3;
         if (config.bandLow >= config.bandHigh) config.bandLow = config.bandHigh - 1;
 
-        // 1. PROCESAMIENTO CRÍTICO (A máxima velocidad)
+        // Si cambia el modo o algún parámetro, reiniciamos el promedio
+        bool configChanged =
+            config.mode != lastMode ||
+            config.kernelSize != lastKernelSize ||
+            config.cutoffFreq != lastCutoffFreq ||
+            config.bandLow != lastBandLow ||
+            config.bandHigh != lastBandHigh;
+
+        if (configChanged) {
+            metrics.resetAverage();
+
+            lastMode = config.mode;
+            lastKernelSize = config.kernelSize;
+            lastCutoffFreq = config.cutoffFreq;
+            lastBandLow = config.bandLow;
+            lastBandHigh = config.bandHigh;
+
+            cachedSpectrum.release();
+            cachedMesh3D.release();
+            frameCounter = 0;
+
+            std::cout << "Nueva medicion - Modo: "
+                      << MODE_NAMES[config.mode]
+                      << std::endl;
+        }
+
+        // 1. PROCESAMIENTO CRÍTICO
+        // Se mide únicamente el tiempo del procesamiento DSP.
         metrics.start();
+
         cv::Mat output = processor.process(frame, config.mode, config);
+
         metrics.stop();
 
+        // Métricas instantáneas
+        double frameTimeMs = metrics.getFrameTimeMs();
+        double fps = metrics.getFPS();
+
+        // Métricas promedio
+        double avgFrameTimeMs = metrics.getAverageFrameTimeMs();
+        double avgFPS = metrics.getAverageFPS();
+        double avgThroughput = metrics.getAverageThroughputMPixelsPerSec(
+            output.cols,
+            output.rows
+        );
+
+        int measuredFrames = metrics.getMeasuredFrames();
+
         // HUD estético sobre la imagen procesada
-        cv::Mat overlay; output.copyTo(overlay);
-        cv::rectangle(overlay, cv::Rect(0, 0, output.cols, 70), cv::Scalar(0, 0, 0), -1);
+        cv::Mat overlay;
+        output.copyTo(overlay);
+
+        cv::rectangle(
+            overlay,
+            cv::Rect(0, 0, output.cols, 90),
+            cv::Scalar(0, 0, 0),
+            -1
+        );
+
         cv::addWeighted(overlay, 0.5, output, 0.5, 0, output);
 
-        std::string statsText = "Lat: " + std::to_string((int)metrics.getFrameTimeMs()) + 
-                                "ms | FPS: " + std::to_string((int)metrics.getFPS());
-        cv::putText(output, "Modo: " + MODE_NAMES[config.mode], cv::Point(15, 30), cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 255, 255), 2);
-        cv::putText(output, statsText, cv::Point(15, 55), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
-        cv::putText(output, "Pulsa 'ESC' para SALIR", cv::Point(output.cols - 220, output.rows - 15), cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(0, 0, 255), 2);
+        std::string modeText =
+            "Modo: " + MODE_NAMES[config.mode];
+
+        std::string instantStatsText =
+            "Inst | Lat: " + std::to_string(static_cast<int>(frameTimeMs)) +
+            " ms | FPS: " + std::to_string(static_cast<int>(fps));
+
+        std::string averageStatsText =
+            "Avg  | N: " + std::to_string(measuredFrames) +
+            " | Lat: " + std::to_string(avgFrameTimeMs).substr(0, 5) +
+            " ms | FPS: " + std::to_string(avgFPS).substr(0, 5) +
+            " | MPix/s: " + std::to_string(avgThroughput).substr(0, 5);
+
+        cv::putText(
+            output,
+            modeText,
+            cv::Point(15, 25),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.65,
+            cv::Scalar(255, 255, 255),
+            2
+        );
+
+        cv::putText(
+            output,
+            instantStatsText,
+            cv::Point(15, 50),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.45,
+            cv::Scalar(255, 255, 255),
+            1
+        );
+
+        cv::putText(
+            output,
+            averageStatsText,
+            cv::Point(15, 75),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.45,
+            cv::Scalar(255, 255, 255),
+            1
+        );
+
+        cv::putText(
+            output,
+            "Pulsa 'ESC' para SALIR",
+            cv::Point(output.cols - 220, output.rows - 15),
+            cv::FONT_HERSHEY_SIMPLEX,
+            0.5,
+            cv::Scalar(0, 0, 255),
+            2
+        );
 
         // Mostrar fuentes en tiempo real
         cv::imshow("Original", frame);
         cv::imshow("Procesado", output);
 
-        // 2. PROCESAMIENTO ANALÍTICO SUBMUESTREADO (Throttling)
+        // 2. PROCESAMIENTO ANALÍTICO SUBMUESTREADO
         frameCounter++;
-        
-        if (config.mode >= 4 && config.mode <= 10) 
+
+        if (config.mode >= 4 && config.mode <= 10)
         {
             // Solo recalculamos las ventanas pesadas cada 10 frames o si están vacías
-            if (frameCounter % 10 == 0 || cachedSpectrum.empty() || cachedMesh3D.empty()) 
+            if (frameCounter % 10 == 0 || cachedSpectrum.empty() || cachedMesh3D.empty())
             {
                 if (config.mode == 10) {
                     cv::Mat gray;
@@ -91,19 +196,22 @@ int main()
                 } else {
                     cachedSpectrum = FrequencyFilters::spectrumMagnitude(output);
                 }
-                
+
                 // Generar el render 3D de la manta del filtro
-                cachedMesh3D = FrequencyFilters::renderMesh3D(config.mode, config.cutoffFreq, config.bandLow, config.bandHigh);
+                cachedMesh3D = FrequencyFilters::renderMesh3D(
+                    config.mode,
+                    config.cutoffFreq,
+                    config.bandLow,
+                    config.bandHigh
+                );
             }
 
-            // Mostrar ventanas analíticas (hacen refresh visual a aprox. 3-5 FPS, super suave)
             cv::imshow("Espectro de Frecuencia", cachedSpectrum);
             cv::imshow("Manta del Filtro 3D", cachedMesh3D);
             frequencyWindowsActive = true;
-        } 
-        else 
+        }
+        else
         {
-            // Si pasamos a filtros espaciales, limpiamos las ventanas extras para no estorbar
             if (frequencyWindowsActive) {
                 cv::destroyWindow("Espectro de Frecuencia");
                 cv::destroyWindow("Manta del Filtro 3D");
@@ -112,7 +220,6 @@ int main()
                 frequencyWindowsActive = false;
             }
         }
-        
 
         char key = static_cast<char>(cv::waitKey(1));
         if (key == 'q' || key == 27) break;

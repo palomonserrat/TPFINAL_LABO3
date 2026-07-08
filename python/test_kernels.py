@@ -20,7 +20,7 @@ def main():
     # "box_blur"
     # "laplacian"
     # "sharpening"
-    filter_name = "sharpening"
+    filter_name = "box_blur"
 
     if filter_name == "box_blur":
         kernel_float = box_blur_kernel(size=5)
