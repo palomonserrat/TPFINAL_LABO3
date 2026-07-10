@@ -99,16 +99,21 @@ namespace FrequencyFilters
 
             cv::copyMakeBorder(grayFloat, padded, 0, optRows - gray.rows, 0, optCols - gray.cols, cv::BORDER_CONSTANT, cv::Scalar::all(0));
 
-            // DFT Real-to-Real (CCS Packed): Devuelve 1 solo canal.
-            // Se ejecuta en la mitad del tiempo porque explota la simetría internamente.
-            cv::dft(padded, dftBuffer, 0);
+            cv::dft(padded, dftBuffer, cv::DFT_COMPLEX_OUTPUT);
 
-            // Multiplicación escalar directa elemento a elemento (1 canal contra 1 canal)
-            // Es infinitamente más rápida que una multiplicación compleja de matrices.
-            cv::multiply(dftBuffer, precomputedMask, dftBuffer);
+            cv::Mat planes[2];
+            cv::split(dftBuffer, planes);
 
-            // IDFT Real-to-Real: Reconstruye la imagen usando el empaquetado simétrico
-            cv::idft(dftBuffer, idftOutput, cv::DFT_SCALE | cv::DFT_REAL_OUTPUT);
+            cv::multiply(planes[0], precomputedMask, planes[0]);
+            cv::multiply(planes[1], precomputedMask, planes[1]);
+
+            cv::merge(planes, 2, dftBuffer);
+
+            cv::idft(
+                dftBuffer,
+                idftOutput,
+                cv::DFT_SCALE | cv::DFT_REAL_OUTPUT
+            );
 
             cv::Mat cropped = idftOutput(cv::Rect(0, 0, gray.cols, gray.rows));
             cv::Mat output;
