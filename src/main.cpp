@@ -34,7 +34,6 @@ int main()
     std::string ctrlWin = "Controles";
     cv::namedWindow(ctrlWin, cv::WINDOW_AUTOSIZE);
     cv::createTrackbar("Modo (0-10)", ctrlWin, &config.mode, 10);
-    cv::createTrackbar("Kernel Size", ctrlWin, &config.kernelSize, 15);
     cv::createTrackbar("Frec. Corte", ctrlWin, &config.cutoffFreq, 150);
     cv::createTrackbar("Banda Baja",  ctrlWin, &config.bandLow, 150);
     cv::createTrackbar("Banda Alta",  ctrlWin, &config.bandHigh, 150);
@@ -47,7 +46,6 @@ int main()
 
     // Variables para detectar cambios de modo/parámetros
     int lastMode = config.mode;
-    int lastKernelSize = config.kernelSize;
     int lastCutoffFreq = config.cutoffFreq;
     int lastBandLow = config.bandLow;
     int lastBandHigh = config.bandHigh;
@@ -58,15 +56,12 @@ int main()
         if (frame.empty()) break;
         cv::flip(frame, frame, 1);
 
-        // Validaciones rápidas
-        if (config.kernelSize % 2 == 0) config.kernelSize++;
-        if (config.kernelSize < 3) config.kernelSize = 3;
+    
         if (config.bandLow >= config.bandHigh) config.bandLow = config.bandHigh - 1;
 
         // Si cambia el modo o algún parámetro, reiniciamos el promedio
         bool configChanged =
             config.mode != lastMode ||
-            config.kernelSize != lastKernelSize ||
             config.cutoffFreq != lastCutoffFreq ||
             config.bandLow != lastBandLow ||
             config.bandHigh != lastBandHigh;
@@ -75,7 +70,6 @@ int main()
             metrics.resetAverage();
 
             lastMode = config.mode;
-            lastKernelSize = config.kernelSize;
             lastCutoffFreq = config.cutoffFreq;
             lastBandLow = config.bandLow;
             lastBandHigh = config.bandHigh;

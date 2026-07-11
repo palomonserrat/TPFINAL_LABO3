@@ -5,7 +5,6 @@
 
 struct FilterConfig {
     int mode = 0;
-    int kernelSize = 5;
     int cutoffFreq = 50;
     int bandLow = 20;
     int bandHigh = 60;
