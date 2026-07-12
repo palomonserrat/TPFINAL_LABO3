@@ -12,24 +12,40 @@ La idea general del TP: diseñar un filtro espacial (kernel), cuantizarlo a punt
 
 ```
 .
+├── .gitignore
+├── .vs/
+├── .vscode/
 ├── CMakeLists.txt
 ├── CMakePresets.json
+├── Informe.pdf          # Informe del proyecto
+├── Messi.jpg            # Imagen ilustrativa
+├── README.md
+├── WindowsSetUp.md
+├── build/               # Directorio de salida de la compilación (CMake)
 ├── include/
 │   ├── camera.hpp
 │   ├── spatialFilters.hpp
 │   └── videoProcessor.hpp
+├── out/                 # Archivos de salida temporales
 ├── src/
 │   ├── main.cpp
 │   ├── camera.cpp
 │   ├── videoProcessor.cpp
 │   ├── spatialFilters.cpp
-│   └── frequencyFilters.cpp     # vacío, placeholder
-└── python/
-    ├── kernels.py
-    ├── frequency_response.py
-    ├── test_kernels.py
-    └── requirements.txt
+│   └── frequencyFilters.cpp
 ```
+
+### Python (prototipado offline) *(no utilizado en la entrega final)*
+
+Los scripts Python fueron empleados inicialmente para validar rápidamente los filtros y la respuesta en frecuencia, pero el proyecto final se basa exclusivamente en la implementación C++/OpenCV. Si desea experimentar de manera opcional, puede ejecutar:
+
+```bash
+cd python
+pip install -r requirements.txt
+python test_kernels.py
+```
+
+> **Nota:** Esta sección es informativa; el código Python no forma parte de la compilación ni del ejecutable principal.
 
 ## Requisitos
 
