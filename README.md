@@ -1,12 +1,12 @@
 # VideoDSP — Procesamiento de video en tiempo real (TP Final Labo 3)
 
-Proyecto de procesamiento digital de señales (2D) sobre video en vivo. Combina:
-
-- Un programa en **C++/OpenCV** que captura la cámara y aplica filtros en tiempo real.
-- Un set de scripts en **Python** para prototipar y validar los filtros (respuesta en frecuencia, cuantización) antes de llevarlos al código en tiempo real.
-
-La idea general del TP: diseñar un filtro espacial (kernel), cuantizarlo a punto fijo (para que sea barato de correr en tiempo real), validar en Python que la cuantización no rompe la respuesta en frecuencia deseada, y después correrlo en C++ sobre el video de la cámara.
-
+El presente informe corresponde al trabajo final de la materia Laboratorio de Electr´onica III (25.24). A lo
+largo del mismo del mismo se desarrolla un sistema de procesamiento digital de se˜nales de video en tiempo
+real utilizando una webcam, Python/OpenCV y una estructura de procesamiento basada en C++.
+En este tratamiento cada frame adquirido es tratado como una se˜nal bidimensional discreta, sobre la cual
+se implementan filtros digitales espaciales y frecuenciales. De este modo, el sistema permite aplicar distintos
+efectos de procesamiento, tales como suavizado, realce de bordes, filtrado pasa-bajos/pasa-altos y eliminaci´on
+de interferencias peri´odicas mediante filtros notch en el dominio de la FFT 2D
 
 ## Estructura del repo
 
@@ -34,18 +34,6 @@ La idea general del TP: diseñar un filtro espacial (kernel), cuantizarlo a punt
 │   ├── spatialFilters.cpp
 │   └── frequencyFilters.cpp
 ```
-
-### Python (prototipado offline) *(no utilizado en la entrega final)*
-
-Los scripts Python fueron empleados inicialmente para validar rápidamente los filtros y la respuesta en frecuencia, pero el proyecto final se basa exclusivamente en la implementación C++/OpenCV. Si desea experimentar de manera opcional, puede ejecutar:
-
-```bash
-cd python
-pip install -r requirements.txt
-python test_kernels.py
-```
-
-> **Nota:** Esta sección es informativa; el código Python no forma parte de la compilación ni del ejecutable principal.
 
 ## Requisitos
 
@@ -143,13 +131,3 @@ Para no tener que abrir la terminal especial de Visual Studio cada vez:
 7. `F5` compila y corre con el debugger conectado.
 
 En Linux/macOS los mismos pasos aplican pero eligiendo el preset `default` y cualquier kit de GCC/Clang detectado.
-
-### Python (prototipado offline)
-
-```bash
-cd python
-pip install -r requirements.txt
-python test_kernels.py
-```
-
-Esto imprime el kernel float, su versión Q1.15, el error de cuantización, y abre las figuras de respuesta en frecuencia.
