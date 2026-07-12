@@ -1,6 +1,6 @@
 # VideoDSP — Procesamiento de video en tiempo real (TP Final Labo 3)
 
-El presente informe corresponde al trabajo final de la materia Laboratorio de Electr´onica III (25.24). A lo
+El presente proyecto corresponde al trabajo final de la materia Laboratorio de Electr´onica III (25.24). A lo
 largo del mismo del mismo se desarrolla un sistema de procesamiento digital de se˜nales de video en tiempo
 real utilizando una webcam, Python/OpenCV y una estructura de procesamiento basada en C++.
 En este tratamiento cada frame adquirido es tratado como una se˜nal bidimensional discreta, sobre la cual
@@ -8,7 +8,7 @@ se implementan filtros digitales espaciales y frecuenciales. De este modo, el si
 efectos de procesamiento, tales como suavizado, realce de bordes, filtrado pasa-bajos/pasa-altos y eliminaci´on
 de interferencias peri´odicas mediante filtros notch en el dominio de la FFT 2D
 
-## Estructura del repo
+## Estructura del repositorio
 
 ```
 .
