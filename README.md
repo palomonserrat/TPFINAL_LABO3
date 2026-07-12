@@ -112,12 +112,6 @@ cmake --build build
    build\Debug\VideoDSP.exe
    ```
 
-### Controles en ejecución
-
-- `0`: ver original en gris
-- `1`: ver box blur 5x5 Q1.15
-- `q` / `ESC`: salir
-
 ## Trabajar desde VS Code (Windows)
 
 Para no tener que abrir la terminal especial de Visual Studio cada vez:
