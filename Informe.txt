@@ -1,0 +1,2438 @@
+25.24 - Laboratorio de Electrónica III
+
+TRABAJO
+PRÁCTICO
+Instituto Tecnológico
+de Buenos Aires
+
+“Procesamiento
+“Procesamiento Digital de
+Video en Tiempo Real”
+Real”
+Nastasi, Santino
+Nro. de legajo: 65.728
+snastasi@itba.edu.ar
+
++
+
+Porco Paneiva, Paloma
+Nro. de legajo: 64.080
+pporcopaneiva@itba.edu.ar
+
+Nieto Abascal, Ramiro
+Nro. de legajo: 64.510
+rnietoabascal@itba.edu.ar
+
+Profesores a cargo: Javier Petrucci
+jpetrucc@itba.edu.ar
+
+Matias Bergerman
+mbergerman@itba.edu.ar
+
+Bruno Di Sanzo
+bdisanzo@itba.edu.ar
+
++
+
+Ayudantes: Nicolás Agustín Beade
+nbeade@itba.edu.ar
+
+The greatest value of a picture is when it forces
+us to notice what we never expected to see.
+
+Índice
+1.
+
+Resumen
+
+3
+
+2.
+
+Introducción teórica
+
+3
+
+3.
+
+4.
+
+2.1. La imagen como señal bidimensional discreta . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+3
+
+2.2. Transformada de Fourier Discreta Bidimensional (DFT 2D) . . . . . . . . . . . . . . . . . . .
+2.2.1. Definición . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+2.2.2. Transformada inversa . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+2.2.3. Centrado del espectro . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+3
+3
+3
+4
+
+Implementación en el dominio de la frecuencia
+
+4
+
+3.1. Máscaras ideales y gaussianas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+4
+
+3.2. Representación no centrada del espectro . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+5
+
+Implementación en el dominio espacial
+
+7
+
+4.1. Mecánica de la implementación . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.1.1. Filtro pasa-bajos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+7
+7
+
+4.2. Laplaciano - filtro pasa altos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.2.1. Simulaciones . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+7
+9
+
+4.3. Sharpening - filtro pasa altos . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+4.3.1. Simulaciones . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+10
+10
+
+5.
+
+Comparativa
+
+10
+
+6.
+
+Anexo
+
+13
+
+7.
+
+6.1. Agregados de DFT 2D . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.1.1. Convención de Sistema de Coordenadas . . . . . . . . . . . . . . . . . . . . . . . . .
+6.1.2. Espectro de magnitud y fase . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.1.3. Centrado del Espectro: imagen . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+13
+13
+13
+15
+
+6.2. Propiedades de la DFT 2D relevantes al procesamiento de imágenes . . . . . . . . . . . . . .
+6.2.1. Teorema de convolución . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2.2. Linealidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2.3. Periodicidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2.4. Simetrı́a conjugada (señales reales) . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2.5. Separabilidad . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+6.2.6. FFT 2D — Transformada Rápida de Fourier . . . . . . . . . . . . . . . . . . . . . . .
+
+15
+15
+16
+16
+17
+18
+18
+
+6.3. Máscaras implementadas . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+18
+
+Desglose de implementación
+
+21
+
+7.1. Filtros de Frecuencia . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+21
+
+7.2. Construcción de la máscara (updateMask) . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.2.1. Ejecución del filtro (run) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.2.2. Funciones de API pública . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+21
+23
+25
+
+7.3. Filtros Espaciales . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3.1. Box Blur Q15 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3.2. Laplaciano 3×3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+7.3.3. Sharpening 3×3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . .
+
+25
+25
+27
+28
+
+2
+
+25.24 – Laboratorio de Electrónica 3
+
+1.
+
+Resumen
+
+El presente informe corresponde al trabajo final de la materia Laboratorio de Electrónica III (25.24). A lo
+largo del mismo del mismo se desarrolla un sistema de procesamiento digital de señales de video en tiempo
+real utilizando una webcam, Python/OpenCV y una estructura de procesamiento basada en C++.
+En este tratamiento cada frame adquirido es tratado como una señal bidimensional discreta, sobre la cual
+se implementan filtros digitales espaciales y frecuenciales. De este modo, el sistema permite aplicar distintos
+efectos de procesamiento, tales como suavizado, realce de bordes, filtrado pasa-bajos/pasa-altos y eliminación
+de interferencias periódicas mediante filtros notch en el dominio de la FFT 2D.
+
+2.
+
+Introducción teórica
+
+En vista a entender el procesamiento que se debe realizar por sobre cada frame, se ha de comenzar con
+una breve introducción teórica que induzca el contenido no tratado durante la materia.
+
+2.1.
+
+La imagen como señal bidimensional discreta
+
+Una imagen digital en escala de grises puede representarse como una función de dos variables discretas:
+f [m, n],
+
+m = 0, 1, . . . , M − 1,
+
+n = 0, 1, . . . , N − 1,
+
+(1)
+
+donde M × N es la resolución de la imagen y f [m, n] ∈ [0, 255] representa la intensidad luminosa (nivel de
+gris) del pı́xel ubicado en la fila m y la columna n.
+En el caso de imágenes en color (RGB), cada frame se descompone en tres canales independientes (rojo,
+verde y azul), cada uno de los cuales constituye una señal bidimensional del mismo tipo.
+Cuando se trabaja con video, se incorpora una tercera dimensión temporal: el sistema adquiere una secuencia de frames fk [m, n], donde el subı́ndice k denota el instante discreto de captura. En el presente trabajo,
+cada frame se procesa de manera independiente, es decir, se aplica procesamiento intra-frame sin explotar la
+correlación temporal entre cuadros sucesivos.
+
+2.2.
+
+Transformada de Fourier Discreta Bidimensional (DFT 2D)
+
+2.2.1.
+
+Definición
+
+La Transformada de Fourier Discreta bidimensional de una imagen f [m, n] de dimensiones M × N se define
+como:
+u m v n
+M−1
+X N−1
+X
+−j 2π
++
+M
+N ,
+F [u, v ] =
+f [m, n] e
+(2)
+m=0 n=0
+
+con u = 0, 1, . . . , M − 1 y v = 0, 1, . . . , N − 1.
+Cada coeficiente F [u, v ] es un número complejo que codifica la amplitud y la fase de la componente
+sinusoidal 2D con frecuencias espaciales (u, v ). La variable u corresponde a la frecuencia en la dirección
+vertical (filas) y v a la frecuencia en la dirección horizontal (columnas).
+2.2.2.
+
+Transformada inversa
+
+La reconstrucción de la imagen a partir de su espectro se realiza mediante la DFT inversa:
+u m v n
+M−1 N−1
+j 2π
++
+1 X X
+M
+N .
+f [m, n] =
+F [u, v ] e
+MN
+
+(3)
+
+u=0 v =0
+
+Esta relación garantiza la reconstrucción perfecta: la DFT 2D es una transformación invertible y sin pérdida
+de información.
+
+3
+
+25.24 – Laboratorio de Electrónica 3
+2.2.3.
+
+Centrado del espectro
+
+La DFT tal como se define ubica la componente de frecuencia cero (DC) en la esquina superior izquierda
+de la matriz. Para facilitar la visualización y el diseño de filtros, se aplica un desplazamiento que traslada la
+componente DC al centro del plano frecuencial. Esto equivale a multiplicar la imagen por (−1)m+n antes de
+aplicar la DFT:
+fshift [m, n] = f [m, n] · (−1)m+n .
+(4)
+
+3.
+
+Implementación en el dominio de la frecuencia
+
+El filtrado en frecuencia se implementó aplicando la Transformada Discreta de Fourier bidimensional a cada
+cuadro de video, de manera de representar la imagen en términos de sus componentes espaciales de frecuencia.
+Una vez obtenido el espectro, se lo multiplica punto a punto por una máscara H(u, v ), diseñada según el tipo
+de filtro requerido, permitiendo atenuar o conservar determinadas regiones del plano frecuencial. Finalmente,
+se aplica la transformada inversa para reconstruir la imagen filtrada en el dominio espacial.
+
+3.1.
+
+Máscaras ideales y gaussianas
+
+Una forma directa de implementar filtros en el dominio de la frecuencia consiste en definir una máscara ideal,
+es decir, una función que conserve completamente ciertas componentes frecuenciales y elimine por completo el
+resto. En el caso de un filtro pasa bajos ideal, se conservan las componentes cuya distancia al origen del plano
+frecuencial sea menor que un radio de corte D0 , mientras que se anulan las componentes de mayor frecuencia.
+De forma análoga, un filtro pasa altos ideal elimina las bajas frecuencias y conserva las componentes por encima
+de dicho radio. Si se define
+p
+D(u, v ) = u 2 + v 2 ,
+las máscaras ideales pueden escribirse como
+ideal
+(u, v ) =
+HLP
+
+(
+1,
+0,
+
+D(u, v ) ≤ D0 ,
+D(u, v ) > D0 ,
+
+y
+(
+0, D(u, v ) ≤ D0 ,
+ideal
+(u, v ) =
+HHP
+1, D(u, v ) > D0 .
+Este criterio resulta intuitivo, ya que permite separar de manera clara las componentes de baja y alta
+frecuencia de la imagen. Las bajas frecuencias están asociadas principalmente a variaciones suaves de intensidad,
+iluminación general y estructuras de gran escala, mientras que las altas frecuencias se relacionan con bordes,
+detalles finos, ruido y transiciones abruptas. Por lo tanto, un filtro pasa bajos ideal tiende a suavizar la imagen,
+mientras que un pasa altos ideal resalta bordes y cambios rápidos.
+Sin embargo, la principal desventaja de las máscaras ideales es la discontinuidad abrupta que presentan
+en la frecuencia de corte. Esta transición instantánea entre ganancia unitaria y ganancia nula no suele ser
+deseable en imágenes, ya que puede introducir oscilaciones espaciales alrededor de bordes y discontinuidades.
+Este efecto se conoce comúnmente como fenómeno de Gibbs. En la práctica, esto puede manifestarse como
+halos o artefactos alrededor de contornos pronunciados, especialmente cuando se utilizan radios de corte bajos
+o cuando la imagen contiene transiciones muy marcadas. Además, al eliminar componentes frecuenciales de
+manera brusca, el resultado puede verse artificial o excesivamente agresivo.
+Para reducir estos efectos, se implementaron también máscaras gaussianas. A diferencia de las máscaras
+ideales, las gaussianas no presentan una transición abrupta, sino que atenúan progresivamente las componentes
+frecuenciales en función de su distancia al origen. El filtro pasa bajos gaussiano se define como
+gauss
+HLP (u, v ) = e
+
+4
+
+−
+
+D 2 (u,v )
+2D 2
+0 ,
+
+25.24 – Laboratorio de Electrónica 3
+donde D0 controla el ancho de la máscara y, por lo tanto, el grado de suavizado aplicado sobre la imagen. En
+este caso, las componentes cercanas al origen se conservan con mayor ganancia, mientras que las frecuencias
+más altas se atenúan de forma gradual.
+El filtro pasa altos gaussiano puede obtenerse como el complemento del pasa bajos:
+gauss
+HHP (u, v ) = 1 − e
+
+−
+
+D 2 (u,v )
+2D 2
+0 .
+
+De esta manera, las bajas frecuencias son atenuadas suavemente y las altas frecuencias se conservan progresivamente. Esto permite resaltar bordes y detalles sin introducir una discontinuidad fuerte en la máscara de
+filtrado.
+En la implementación realizada se incluyeron ambas variantes, permitiendo comparar el comportamiento
+de filtros pasa bajos y pasa altos ideales frente a sus equivalentes gaussianos. Para optimizar el procesamiento
+en tiempo real, la máscara se calcula únicamente cuando cambia el tamaño de la imagen o el parámetro de
+corte, y luego se reutiliza durante el filtrado de cada cuadro.
+
+3.2.
+
+Representación no centrada del espectro
+
+En la Sección 2.2.3 se presentó el centrado del espectro, mediante el cual la componente continua se
+traslada al centro de la matriz frecuencial. Esta representación resulta especialmente útil para la visualización y
+para la interpretación teórica de las máscaras, ya que permite asociar las bajas frecuencias con la región central
+y las altas frecuencias con las zonas más alejadas.
+Sin embargo, el centrado no forma parte del cálculo de la DFT en sı́ mismo. La transformada obtenida
+mediante OpenCV conserva el orden natural de los coeficientes de la DFT: la componente continua se encuentra en la posición (0, 0), es decir, en la esquina superior izquierda de la matriz. Las frecuencias positivas
+aparecen a continuación, mientras que las frecuencias negativas se representan en los últimos ı́ndices debido a
+la periodicidad de la transformada.
+Para una matriz de dimensiones M × N, el ı́ndice frecuencial asociado a la fila y y la columna x puede
+expresarse como
+(
+(
+y,
+y ≤ M/2,
+x,
+x ≤ N/2,
+v (y ) =
+u(x) =
+(5)
+y − M, y > M/2,
+x − N, x > N/2.
+Por lo tanto, aunque los ı́ndices negativos se almacenen en el extremo opuesto de la matriz, su distancia
+al origen frecuencial se calcula como
+q
+D(x, y ) = mı́n(x, N − x)2 + mı́n(y , M − y )2 .
+(6)
+Esta expresión equivale a calcular la distancia sobre un plano periódico. En lugar de considerar que el
+origen se encuentra únicamente en la esquina (0, 0), se tiene en cuenta que los bordes opuestos de la DFT son
+adyacentes. En consecuencia, una máscara radial que en la representación centrada aparece como una única
+región alrededor del centro se divide, en el orden nativo, entre las cuatro esquinas de la matriz.
+La Figura 1 muestra esta equivalencia. En la representación centrada, la respuesta pasa banda se observa
+como una corona alrededor del centro. Al conservar el orden nativo de OpenCV, la misma corona queda
+distribuida entre las cuatro esquinas. Ambas máscaras representan exactamente la misma respuesta frecuencial;
+únicamente cambia la ubicación de sus coeficientes dentro de la matriz.
+En la implementación se decidió realizar el filtrado directamente sobre el espectro no centrado. El centrado
+requerirı́a intercambiar los cuatro cuadrantes de la matriz antes de aplicar la máscara y repetir la operación
+inversa antes de calcular la IDFT. Aunque esta reorganización no modifica el contenido frecuencial, implica
+recorridos adicionales sobre la imagen, movimientos de memoria y creación de matrices auxiliares. Dado que
+el procesamiento debe ejecutarse para cada cuadro de video, se evitó esta operación y se adaptó directamente
+la construcción de las máscaras al orden entregado por OpenCV.
+Con este objetivo, para cada posición (x, y ) se calculan las distancias discretas
+ud = mı́n(x, N − x),
+
+vd = mı́n(y , M − y ),
+5
+
+(7)
+
+25.24 – Laboratorio de Electrónica 3
+
+Figura 1: Comparación entre una máscara pasa banda en representación centrada y su disposición equivalente
+en el orden nativo de la DFT.
+y se utiliza la distancia cuadrática
+D 2 (x, y ) = ud2 + vd2 .
+
+(8)
+
+El uso de D 2 evita calcular una raı́z cuadrada para cada elemento de la máscara. Por ejemplo, en el filtro
+pasa bajos ideal la comparación
+D(x, y ) ≤ D0
+
+(9)
+
+D 2 (x, y ) ≤ D02 .
+
+(10)
+
+se reemplaza por la expresión equivalente
+
+De forma similar, para los filtros gaussianos se precalcula el factor −1/(2D02 ) y luego se evalúa
+"
+!#
+1
+2
+H(x, y ) = exp D (x, y ) − 2
+.
+2D0
+
+(11)
+
+Además, la máscara no se vuelve a calcular para cada cuadro. Se genera únicamente cuando cambia el
+tamaño de la imagen, el tipo de filtro o alguno de sus parámetros de corte, y luego se reutiliza en los cuadros
+siguientes. De esta manera, el procesamiento habitual de cada frame queda reducido esencialmente al cálculo
+de la DFT, la multiplicación punto a punto por la máscara y la transformada inversa.
+Para la visualización del espectro sı́ se realiza el intercambio de cuadrantes, ya que en ese caso el objetivo
+es facilitar su interpretación y no efectuar el filtrado. Ası́, la aplicación distingue entre dos representaciones
+de una misma información: una representación centrada, utilizada para mostrar el espectro al usuario, y una
+representación nativa, utilizada internamente para reducir operaciones durante el procesamiento en tiempo
+real.
+6
+
+25.24 – Laboratorio de Electrónica 3
+
+4.
+
+Implementación en el dominio espacial
+
+A diferencia del filtrado en frecuencia, el filtrado espacial opera directamente sobre los pı́xeles de la imagen.
+En general, el valor de cada pı́xel de salida se obtiene aplicando un operador sobre el pı́xel correspondiente y
+su vecindad:
+g (x, y ) = T [f (x, y )],
+
+(12)
+
+donde f (x, y ) es la imagen de entrada, g (x, y ) la imagen de salida y T un operador definido alrededor del
+punto (x, y ). En este trabajo se consideran filtros basados en vecindades, a diferencia de las transformaciones
+puntuales, que modifican cada pı́xel de forma independiente.
+
+4.1.
+
+Mecánica de la implementación
+
+Un filtro espacial lineal se implementa desplazando una matriz de coeficientes, denominada kernel o máscara, sobre la imagen. En cada posición, se multiplican los pı́xeles de la vecindad por los coeficientes correspondientes y se suman los resultados.
+Para un kernel de dimensiones m × n, la convolución bidimensional puede expresarse como
+g (x, y ) =
+
+a
+b
+X
+X
+
+h(i, j), f (x − i, y − j),
+
+(13)
+
+i=−a j=−b
+
+donde h(i, j) representa los coeficientes del kernel, a = (m − 1)/2 y b = (n − 1)/2, suponiendo dimensiones
+impares. El tamaño y los coeficientes de la máscara determinan el comportamiento del filtro.
+4.1.1.
+
+Filtro pasa-bajos
+
+Un filtro pasa bajos espacial atenúa las variaciones rápidas de intensidad, produciendo un suavizado de la
+imagen y una reducción de bordes, detalles finos y ruido.
+Uno de los casos más sencillos es el filtro de promedio o box filter, cuyos coeficientes tienen el mismo valor.
+Para una máscara de dimensiones m × n:
+h(i, j) =
+
+1
+.
+mn
+
+(14)
+
+Por ejemplo, para un kernel de 3 × 3:
+
+
+1 1 1
+1
+h = 1 1 1 .
+9
+1 1 1
+
+(15)
+
+Cada pı́xel de salida corresponde al promedio de su vecindad. Al aumentar el tamaño del kernel se incrementa
+el suavizado, pero también la pérdida de detalles.
+La normalización garantiza que la suma de los coeficientes sea igual a uno:
+XX
+i
+
+h(i, j) = 1,
+
+(16)
+
+j
+
+evitando modificaciones globales en el nivel medio de intensidad o brillo de la imagen.
+Simulaciones
+
+4.2.
+
+Laplaciano - filtro pasa altos
+
+En el contexto de procesamiento de imágenes existe la necesidad de generar filtros que produzcan una
+detección de bordes. Con tal de lograr sintetizar tal procesamiento es importante entender que los bordes
+dentro de una imagen se condicen con transiciones en la intensidad. De este modo se ha de recurrir a la
+herramienta fundamental del cálculo para detectar variaciones en una magnitud: la derivada.
+7
+
+25.24 – Laboratorio de Electrónica 3
+0
+
+2
+
+20
+
+1
+
+40
+
+0
+
+60
+
+1
+
+80
+
+2
+
+100
+
+3
+
+3
+
+2
+
+1
+
+0
+1
+x [rad/muestra]
+
+2
+
+3
+
+10
+Magnitud [dB]
+
+y [rad/muestra]
+
+Corte central - Box Blur 5x5 Q1.15
+
+0
+
+Magnitud [dB]
+
+Respuesta en frecuencia 2D - Box Blur 5x5 Q1.15
+
+3
+
+20
+30
+40
+50
+60
+
+120
+
+3
+
+(a) Respuesta en frecuencia bidimensional.
+
+2
+
+1
+
+0
+
+x [rad/muestra]
+
+1
+
+2
+
+3
+
+(b) Corte central de la respuesta.
+
+Figura 2: Respuesta en frecuencia del filtro de promedio 5 × 5 implementado en formato Q1.15.
+Para caracterizar en mayor detalle el comportamiento de las imágenes se ha de destacar que las transiciones
+no se presentan (en lineas generales), como escalones de intensidad, sino que una representación más fiel de la
+misma corresponde a rampas de intensidad. De este modo, si se quiere disponer de valores no nulos únicamente
+en aquellos puntos donde se presenta un borde, no basta con analizar la derivada primera de la intensidad, sino
+que se debe de recurrir a la derivada segunda.
+
+Figura 3: Idea detrás de emplear la derivada segunda.
+
+8
+
+25.24 – Laboratorio de Electrónica 3
+El cálculo de esta magnitud se puede realizar mediante la expansión en series de Taylor de la función en los
+puntos contiguos x + 1 y x − 1. Asumiendo un espaciamiento unitario entre pı́xeles (∆x = 1), las expansiones
+resultan:
+f (x + 1) = f (x) +
+
+∂f
+1 ∂2f
+1 ∂3f
++
++
++ O(14 )
+∂x
+2 ∂x 2 6 ∂x 3
+
+f (x − 1) = f (x) −
+
+∂f
+1 ∂3f
+1 ∂2f
+−
++ O(14 )
++
+∂x
+2 ∂x 2 6 ∂x 3
+
+Donde O(14 ) representa el error de truncamiento de órdenes superiores, el cual puede ser despreciado.
+Al sumar miembro a miembro ambas ecuaciones, los términos asociados a las derivadas de orden impar (por
+poseer signos opuestos) se cancelan mutuamente, quedando una relación matemática puramente simétrica:
+∂2f
+∂x 2
+Despejando el término de la derivada segunda, se arriba finalmente a la expresión discreta:
+f (x + 1) + f (x − 1) = 2f (x) +
+
+∂2f
+= f (x + 1) + f (x − 1) − 2f (x)
+(17)
+∂x 2
+Sin embargo hasta aquı́ se ha discutido la detección de variaciones de intensidad en una única dimensión,
+dado que las imágenes son bi-dimensionales, se ha de emplear un operador que comprenda información en
+ambas direcciones: el Laplaciano:
+
+∇2 f =
+
+∂2f
+∂2f
++
+= f (x + 1; y ) + f (x − 1; y ) − 2f (x; y ) + f (x; y + 1) + f (x; y − 1) − 2f (x; y )
+∂x 2 ∂y 2
+
+Pudiendo representar a este operador de manera matricial (kernel):
+
+
+0 1 0
+∇2 = 1 −4 1
+0 1 0
+4.2.1.
+
+(18)
+
+(19)
+
+Simulaciones
+
+3
+
+Respuesta en frecuencia 2D - Laplaciano 3x3
+
+Corte central - Laplaciano 3x3
+0
+
+0
+
+2
+50
+
+100
+
+0
+1
+
+150
+
+2
+
+200
+
+3
+
+Magnitud [dB]
+
+Magnitud [dB]
+
+y [rad/muestra]
+
+50
+1
+
+3
+
+2
+
+1
+
+0
+
+1
+
+x [rad/muestra]
+
+2
+
+100
+150
+200
+250
+
+3
+
+(a) Respuesta en frecuencia bidimensional.
+
+3
+
+2
+
+1
+
+0
+
+x [rad/muestra]
+
+1
+
+(b) Corte central de la respuesta.
+
+Figura 4: Respuesta en frecuencia del filtro de Laplaciano (detección de bordes).
+
+9
+
+2
+
+3
+
+25.24 – Laboratorio de Electrónica 3
+4.3.
+
+Sharpening - filtro pasa altos
+
+En la sección anterior se trato al filtro mediante Laplaciano que pretendı́a realizar una detección de bordes.
+En función de esta idea otro filtro que puede llegar a ser de interés es aquel que permita realizar un realce de
+los bordes sin distorsionar la imagen de manera global.
+Los bordes en una imagen se pueden presentar como máximos o mı́nimos de intensidad. Por ende si se
+desea enfatizarlos se ha de incrementar la diferencia con los pixeles adyacentes con esa misma tendencia: si se
+dispone de un máximo se ha de añadir una cantidad de intensidad, mientras que si se dispone de un mı́nimo se
+ha de aumentar. En función de este criterio y recordando que la derivada segunda de una función mono variable
+es positiva en un mı́nimo y negativa en un máximo, la transformada asociada al efecto descrito corresponde a:
+g (x; y ) = f (x; y ) − α∇2 f
+
+(20)
+
+siendo α una entero positivo asociado a la ganancia del filtro.
+Simulaciones
+Respuesta en frecuencia 2D - Sharpening 3x3
+17.5
+
+2
+y [rad/muestra]
+
+Corte central - Sharpening 3x3
+14
+12
+
+15.0
+
+1
+
+12.5
+
+0
+
+10.0
+7.5
+
+1
+
+10
+Magnitud [dB]
+
+3
+
+Magnitud [dB]
+
+4.3.1.
+
+3
+
+2
+
+2.5
+3
+
+2
+
+1
+
+0
+1
+x [rad/muestra]
+
+2
+
+3
+
+6
+4
+
+5.0
+2
+
+8
+
+0
+
+0.0
+
+3
+
+(a) Respuesta en frecuencia bidimensional.
+
+2
+
+1
+
+0
+
+x [rad/muestra]
+
+1
+
+2
+
+3
+
+(b) Corte central de la respuesta.
+
+Figura 5: Respuesta en frecuencia del filtro sharpening (realce de bordes).
+
+5.
+
+Comparativa
+
+Una vez realizado el desglose de los diferentes efectos, se procede a efectuar un análisis comparativo integral
+entre los resultados obtenidos mediante el procesamiento en el dominio espacial y en el dominio frecuencial
+(ver Figura 6).
+
+10
+
+25.24 – Laboratorio de Electrónica 3
+
+Figura 6: Comparativa global de los filtros espaciales y frecuenciales implementados.
+En primera instancia, resulta sencillo distinguir el comportamiento de los filtros pasa-altos y de los operadores de detección de bordes. Ambos presentan caracterı́sticamente un fondo oscuro debido a la atenuación o
+eliminación completa de la componente de continua (frecuencia cero), la cual codifica la luminancia promedio
+de la escena.
+Dentro de este grupo, se destaca notablemente el filtro Laplaciano. A diferencia de un filtro pasa-altos
+frecuencial convencional, el cual actúa mediante la sustracción selectiva de frecuencias bajas, el Laplaciano
+opera en el dominio espacial como un derivador de segundo orden. En el dominio de la frecuencia, esto se
+traduce en una transferencia que no solo atenúa la componente de continua, sino que además amplifica las
+componentes de alta frecuencia (ver ganancia en Figura 4b). Esta amplificación local genera bordes con una
+intensidad y brillo significativamente mayores. No obstante, como contrapartida de esta naturaleza derivativa,
+las transiciones visuales resultan abruptas y el filtro exhibe una alta sensibilidad al ruido de alta frecuencia,
+manifestándose en un aspecto más texturado o ruidoso en comparación con el filtrado pasa-altos Gaussiano,
+cuya transición en la banda de paso es suave y controlada.
+Por otro lado, al analizar los filtros de frecuencia en sus variantes ideales (tanto pasa-bajos como pasaaltos), se distingue un patrón ondulatorio y repetitivo que se propaga de forma concéntrica a partir de los
+bordes nı́tidos. Este fenómeno visual es la manifestación bidimensional del fenómeno de Gibbs (en la jerga del
+procesamiento de imágenes se suele denominarlo como ringing ). Debido a la discontinuidad abrupta (función
+escalón) en el corte de la máscara frecuencial ideal, su antitransformada de Fourier genera una función Sinc
+en el dominio espacial, cuyos lóbulos secundarios introducen estas oscilaciones espaciales artificiales. Este
+comportamiento indeseado se elimina por completo en las versiones Gaussianas de dichos filtros, puesto que la
+transformada de Fourier de una Gaussiana es otra función Gaussiana, carente de discontinuidades y de lóbulos
+secundarios, lo que garantiza transiciones perfectamente suaves y libres de oscilaciones tanto en el suavizado
+como en la extracción de alta frecuencia.
+
+11
+
+25.24 – Laboratorio de Electrónica 3
+
+Figura 7: Fenómeno de Gibbs en marco de procesamiento de imágenes.
+Finalmente, respecto a los filtros pasa-bajos espaciales y frecuenciales, se observa que el filtro Box Blur
+genera estructuras sutilmente facetadas o pixeladas debido al uso de una ventana de promedio cuadrada y
+uniforme. En contraste, el filtro pasa-bajos Gaussiano entrega una degradación isotrópica y homogénea de la
+nitidez, preservando de mejor manera la coherencia estructural de los objetos difuminados.
+
+Figura 8: Falta de simetrı́a radial en procesamiento Box Blur.
+
+12
+
+25.24 – Laboratorio de Electrónica 3
+
+6.
+
+Anexo
+
+6.1.
+
+Agregados de DFT 2D
+
+6.1.1.
+
+Convención de Sistema de Coordenadas
+
+Figura 9: Convención de sistema de coordenadas — Imagen en B&N.
+
+Figura 10: Convención de sistema de coordenadas — Imagen a color.
+6.1.2.
+
+Espectro de magnitud y fase
+
+El coeficiente F [u, v ] puede expresarse en forma polar:
+F [u, v ] = F [u, v ] e j ϕ[u,v ] ,
+donde:
+q 
+
+Re2 F [u, v ] + Im2 F [u, v ]
+!
+
+Im F [u, v ]
+
+Espectro de fase: ϕ[u, v ] = arctan
+Re F [u, v ]
+Espectro de magnitud: F [u, v ] =
+
+13
+
+(21)
+
+25.24 – Laboratorio de Electrónica 3
+El espectro de magnitud informa sobre la energı́a asociada a cada frecuencia espacial, mientras que la fase
+codifica la posición o estructura geométrica de los patrones en la imagen. Perceptualmente, la fase es crı́tica
+para la reconstrucción visual correcta.
+
+Figura 11: (a) Imagen del niño. (b) Ángulo de fase. (c) Imagen del niño reconstruida utilizando únicamente su
+ángulo de fase (todas las caracterı́sticas de forma están presentes, pero falta la información de intensidad debido
+a que el espectro no se utilizó en la reconstrucción). (d) Imagen del niño reconstruida utilizando únicamente
+su espectro. (e) Imagen del niño reconstruida utilizando su ángulo de fase y el espectro de un rectángulo. (f)
+Imagen del rectángulo mencionado en (e) reconstruida utilizando su fase y el espectro de la imagen del niño.
+
+14
+
+25.24 – Laboratorio de Electrónica 3
+6.1.3.
+
+Centrado del Espectro: imagen
+
+Figura 12: Centrado del espectro.
+
+6.2.
+
+Propiedades de la DFT 2D relevantes al procesamiento de imágenes
+
+6.2.1.
+
+Teorema de convolución
+
+La convolución espacial de una imagen f [m, n] con un kernel h[m, n] equivale a la multiplicación punto a
+punto en el dominio de la frecuencia:
+f [m, n] ∗ h[m, n] ←→ F [u, v ] · H[u, v ].
+
+(22)
+
+Esta propiedad es el fundamento del filtrado en el dominio de la frecuencia: en lugar de realizar una convolución
+espacial (costosa para kernels grandes), se puede:
+1. Calcular F [u, v ] = FFT2D{f [m, n]}.
+15
+
+25.24 – Laboratorio de Electrónica 3
+2. Diseñar o calcular H[u, v ] (respuesta en frecuencia del filtro).
+3. Multiplicar G [u, v ] = F [u, v ] · H[u, v ].
+4. Recuperar la imagen filtrada g [m, n] = IFFT2D{G [u, v ]}.
+Esta secuencia se corresponde a cualquier transformación lineal inversible que pueda ser aplicada:
+
+Figura 13: Work flow al emplear transformasiones lineales inversibles
+6.2.2.
+
+Linealidad
+α f1 [m, n] + β f2 [m, n] ←→ α F1 [u, v ] + β F2 [u, v ].
+
+6.2.3.
+
+(23)
+
+Periodicidad
+
+La DFT 2D es periódica con perı́odo M en u y N en v :
+F [u, v ] = F [u + M, v ] = F [u, v + N].
+
+(24)
+
+Esto implica que el espectro es redundante y que las frecuencias más altas representables están dadas por las
+frecuencias de Nyquist espaciales.
+Si bien no se realizara un desarrollo sobre este tema dado que el foco del proyecto es el procesamiento
+de la imagen, no ası́ el muestreo, es relevante destacar que esta propiedad se induce de manera análoga a lo
+que ocurre en la DFT unidimensional. Si se parte del hecho de que el muestreo de una imagen al digitalizarla
+corresponde con el producto de trenes de deltas en ambas dimensiones:
+
+Figura 14: Equivalencia del muestreo bi-dimesional.
+De este modo se disponen de frecuencias de Nyquist tal que:
+
+16
+
+25.24 – Laboratorio de Electrónica 3
+(
+1
+µmax = 2∆T
+1
+νmax = 2∆Z
+
+(25)
+
+donde, al igual que en caso unidimensional, de disponer de compontes con frecuencia espacial superior a estos
+lı́mites se sufre aliasing:
+
+Figura 15: Ejemplos de muestreo por encima de las frecuencias de Nyquist y por debajo de estas.
+6.2.4.
+
+Simetrı́a conjugada (señales reales)
+
+Para imágenes reales (f [m, n] ∈ R), se cumple la simetrı́a hermı́tica:
+F [u, v ] = F ∗ [−u, −v ],
+
+(26)
+
+lo cual implica que la magnitud es simétrica respecto al centro del espectro:
+F [u, v ] = F [−u, −v ] ,
+
+(27)
+
+mientras que la fase es antisimétrica: ϕ[u, v ] = −ϕ[−u, −v ].
+Esto involucra que exista redundancia espectral: la mitad del espectro de magnitud es una copia espejada
+de la otra mitad. Esto significa que toda la información frecuencial de la imagen queda determinada por solo
+la mitad de los coeficientes F [u, v ]. Al visualizar el espectro centrado, esto se manifiesta como un patrón
+visualmente simétrico respecto al punto central (componente DC).
+
+Figura 16: Ejemplo de espectro. A la izquierda se muestra la imagen a procesar, mientras que a la derecha el
+espectro asociado.
+17
+
+25.24 – Laboratorio de Electrónica 3
+6.2.5.
+
+Separabilidad
+
+Una propiedad fundamental de la DFT 2D es su separabilidad: puede descomponerse en dos transformadas
+unidimensionales aplicadas secuencialmente:
+
+
+M−1
+X N−1
+X
+
+F [u, v ] =
+f [m, n] e −j 2π v n/N  e −j 2π u m/M .
+(28)
+m=0
+
+n=0
+
+Esto permite computar primero la DFT 1D de cada fila y luego la DFT 1D de cada columna del resultado (o
+viceversa), lo cual reduce la complejidad computacional y permite aprovechar algoritmos optimizados de FFT
+unidimensional.
+6.2.6.
+
+FFT 2D — Transformada Rápida de Fourier
+
+El cálculo directo de la DFT 2D tiene complejidad O(M 2 N 2 ), lo cual es prohibitivo para imágenes de
+resolución moderada. Gracias a la separabilidad, se aplica el algoritmo de Fast Fourier Transform (FFT) de
+Cooley–Tukey a cada fila y cada columna, reduciendo la complejidad a:
+
+
+O MN log M + MN log N = O MN log(MN) .
+(29)
+Para una imagen de 512 × 512 pı́xeles, esto representa una reducción de aproximadamente tres órdenes de
+magnitud en el número de operaciones respecto al cálculo directo, lo cual hace viable el procesamiento en
+tiempo real.
+
+6.3.
+
+Máscaras implementadas
+
+A continuación se presentan las máscaras implementadas para el filtrado en el dominio de la frecuencia.
+En todos los casos, D(u, v ) representa la distancia al origen del plano frecuencial:
+p
+D(u, v ) = u 2 + v 2 .
+
+1.0
+
+0.6
+0.4
+0.2
+0.0
+
+Pasa bajos ideal
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+
+u
+
+Figura 17: Máscara pasa bajos ideal.
+
+18
+
+200
+
+−200
+
+v
+
+H(u,v)
+
+0.8
+
+(
+1, D(u, v ) ≤ D0 ,
+ideal
+HLP
+(u, v ) =
+0, D(u, v ) > D0 .
+
+25.24 – Laboratorio de Electrónica 3
+
+1.0
+
+0.6
+
+(
+0, D(u, v ) ≤ D0 ,
+ideal
+HHP
+(u, v ) =
+1, D(u, v ) > D0 .
+
+H(u,v)
+
+0.8
+
+0.4
+0.2
+0.0
+
+Pasa altos ideal
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+200
+
+u
+
+v
+
+−200
+
+Figura 18: Máscara pasa altos ideal.
+
+1.0
+
+gauss
+
+HLP
+
+−
+
+(u, v ) = e
+
+0.6
+
+D 2 (u,v )
+2D 2
+0
+
+H(u,v)
+
+0.8
+
+0.4
+0.2
+
+Pasa bajos gaussiano
+
+0.0
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+200
+
+u
+
+v
+
+−200
+
+Figura 19: Máscara pasa bajos gaussiana.
+
+1.0
+
+0.6
+
+D 2 (u,v )
+−
+2
+gauss
+H
+(u, v ) = 1 − e 2D0
+
+0.4
+
+HP
+
+0.2
+
+Pasa altos gaussiano
+
+0.0
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+
+u
+
+Figura 20: Máscara pasa altos gaussiana.
+
+19
+
+200
+
+−200
+
+v
+
+H(u,v)
+
+0.8
+
+25.24 – Laboratorio de Electrónica 3
+
+1.0
+
+0.6
+
+D 2 (u,v )
+D 2 (u,v )
+−
+−
+2
+gauss
+2D 2
+H
+− e 2DL
+H
+(u, v ) = e
+
+H(u,v)
+
+0.8
+
+0.4
+
+BP
+
+0.2
+
+Pasa banda gaussiano
+
+0.0
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+200
+
+u
+
+v
+
+−200
+
+Figura 21: Máscara pasa banda gaussiana, con DL < DH .
+
+1.0
+
+gauss
+HBR (u, v ) = 1 − e
+
+−
+
+D 2 (u,v )
+D 2 (u,v )
+−
+2
+2D 2
+H
+− e 2DL 
+
+
+
+0.6
+0.4
+0.2
+0.0
+
+Rechaza banda gaussiano
+200
+100
+
+−200
+
+0
+
+−100
+
+−100
+
+0
+100
+
+u
+
+200
+
+Figura 22: Máscara rechaza banda gaussiana, con DL < DH .
+
+20
+
+−200
+
+v
+
+H(u,v)
+
+0.8
+
+
+
+25.24 – Laboratorio de Electrónica 3
+
+7.
+
+Desglose de implementación
+
+7.1.
+
+Filtros de Frecuencia
+
+Clase SuperChargedFilterEngine La clase encapsula el proceso completo de:
+1. Preparar un “mask” (máscara) en frecuencia según el tipo de filtro.
+2. Realizar el DFT de la imagen (con padding óptimo).
+3. Aplicar la máscara multiplicando los dos planos complejos.
+4. Ejecutar el IDFT y recortar la imagen original.
+class S u p e r C h a r g e d F i l t e r E n g i n e
+{
+3 private :
+4
+int optRows = 0 , optCols = 0;
+5
+cv :: Mat precomputedMask ; // 1 canal ( CV_32FC1 )
+1
+2
+
+6
+
+// Buffers e s t t i c o s de 1 solo canal : Memoria congelada y optimizada
+cv :: Mat padded ;
+9
+cv :: Mat dftBuffer ;
+10
+cv :: Mat idftOutput ;
+11
+cv :: Mat grayFloat ;
+12 public :
+13
+void updateMask ( cv :: Size size , FilterType type , double p1 , double p2 = 0.0)
+;
+14
+cv :: Mat run ( const cv :: Mat & gray ) ;
+15 };
+7
+8
+
+Listing 1: Declaración de la clase y miembros estáticos
+
+Optimización de memoria Los objetos cv::Mat se crean una única vez con el tamaño óptimo que devuelve
+cv::getOptimalDFTSize. De esta forma se evitan reallocaciones costosas en cada llamada a run.
+
+7.2.
+
+Construcción de la máscara (updateMask)
+
+void S u p e r C h a r g e d F i l t e r E n g i n e :: updateMask ( cv :: Size size , FilterType type ,
+double p1 , double p2 )
+2 {
+3
+optRows = cv :: ge tOptim alDFTS ize ( size . height ) ;
+4
+optCols = cv :: ge tOptim alDFTS ize ( size . width ) ;
+1
+
+5
+6
+7
+8
+9
+
+padded . create ( optRows , optCols , CV_32F ) ;
+dftBuffer . create ( optRows , optCols , CV_32F ) ;
+idftOutput . create ( optRows , optCols , CV_32F ) ;
+precomputedMask . create ( optRows , optCols , CV_32F ) ;
+
+10
+11
+12
+13
+
+// Elevamos los radios al cuadrado
+float p1Sq = static_cast < float >( p1 * p1 ) ;
+float p2Sq = static_cast < float >( p2 * p2 ) ;
+
+14
+15
+
+16
+17
+
+// En lugar de dividir por (2 * p ^2) adentro , multiplicamos por ( -1 / (2 *
+p ^2) )
+float invDenom1 = ( p1 > 0.0) ? -1.0 f / (2.0 f * p1Sq ) : 0.0 f ;
+float invDenom2 = ( p2 > 0.0) ? -1.0 f / (2.0 f * p2Sq ) : 0.0 f ;
+
+18
+19
+
+for ( int y = 0; y < optRows ; y ++)
+
+21
+
+25.24 – Laboratorio de Electrónica 3
+{
+
+20
+
+int v = ( y <= optRows / 2) ? y : ( optRows - y ) ;
+int vSq = v * v ; // Elevamos ’v ’ al cuadrado una sola vez por fila
+float * m = precomputedMask . ptr < float >( y ) ;
+for ( int x = 0; x < optCols ; x ++)
+{
+int u = ( x <= optCols / 2) ? x : ( optCols - x ) ;
+// Distancia al cuadrado puramente entera . Sin sqrt .
+int distSq = u * u + vSq ;
+switch ( type )
+{
+case FilterType :: IdealLow :
+m [ x ] = ( distSq <= p1Sq ) ? 1.0 f : 0.0 f ; break ;
+case FilterType :: IdealHigh :
+m [ x ] = ( distSq <= p1Sq ) ? 0.0 f : 1.0 f ; break ;
+case FilterType :: GaussLow :
+m [ x ] = std :: exp ( distSq * invDenom1 ) ; break ;
+case FilterType :: GaussHigh :
+m [ x ] = 1.0 f - std :: exp ( distSq * invDenom1 ) ; break ;
+case FilterType :: BandPass :
+{
+float gHigh = std :: exp ( distSq * invDenom2 ) ;
+float gLow = std :: exp ( distSq * invDenom1 ) ;
+m [ x ] = gHigh - gLow ; break ;
+}
+case FilterType :: BandReject :
+{
+float gHigh = std :: exp ( distSq * invDenom2 ) ;
+float gLow = std :: exp ( distSq * invDenom1 ) ;
+m [ x ] = 1.0 f - ( gHigh - gLow ) ; break ;
+}
+}
+}
+
+21
+22
+23
+24
+25
+26
+27
+28
+29
+30
+31
+32
+33
+34
+35
+36
+37
+38
+39
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+50
+51
+52
+
+}
+
+53
+54
+
+}
+
+Listing 2: Cuerpo de updateMask
+En este código se realizan diferentes optimizaciones:
+Mapeo Topológico de Frecuencias (Estrategia sin Shift).
+Como se explicó en la introducción teórica, la Transformada Discreta de Fourier Bidimensional (DFT 2D)
+provista por cv::dft organiza los coeficientes ubicando la componente de continua en el origen geométrico
+de la matriz (coordenada (0, 0)). Debido a la periodicidad implı́cita de la DFT (X (u, v ) = X (u + N, v + M)),
+las frecuencias negativas se reflejan a partir de la mitad del tamaño de la matriz.
+Tradicionalmente, para procesar la imagen de forma intuitiva (con el DC en el centro), se aplica una
+operación de simetrı́a central (fftshift) que reubica los cuadrantes. Sin embargo, esta operación requiere copiar
+y mover O(M × N) elementos en memoria, lo cual destruye la localidad de la caché.
+Para evitar perdida de rendimiento en estas operaciones, se calcula la distancia radial D(u, v ) mapeando
+directamente los ı́ndices simétricos según las propiedades de aliasing frecuencial. La distancia discreta al origen
+desde cualquier punto (x, y ) de la matriz de tamaño N × M se calcula a mano mediante la función partida:
+(
+(
+y
+si y ≤ M
+x
+si x ≤ N2
+2
+,
+v
+=
+(30)
+u=
+N − x si x > N2
+M − y si y > M
+2
+Esta formulación matemática se traduce exactamente en las expresiones ternarias del código. Al calcular
+la distancia al cuadrado como D 2 (u, v ) = u 2 + v 2 , se construye una máscara perfectamente simétrica y
+compatible con el espectro nativo de la DFT, logrando un costo de reordenamiento de memoria estrictamente
+igual a O(0).
+22
+
+25.24 – Laboratorio de Electrónica 3
+Transformación Algebraica del Filtro Gaussiano
+La ecuación teórica continua para un filtro pasa-bajos Gaussiano estándar está dada por:
+!
+!
+D 2 (u, v )
+u2 + v 2
+H(u, v ) = exp −
+= exp −
+2D02
+2D02
+
+(31)
+
+Donde D0 es el radio de corte. En una implementación directa no optimizada, calcular esta expresión por
+cada pı́xel requiere: dos elevaciones al cuadrado, una adición, una raı́z cuadrada (para obtener D), una elevación
+al cuadrado del radio, una multiplicación por dos, una división flotante y finalmente la función exponencial.
+El algoritmo reduce este costo algebraico al pre-calcular el recı́proco negativo del denominador fuera de los
+bucles iterativos como una constante pura κ:
+κ = invDenom1 = −
+
+1
+2D02
+
+Sustituyendo κ en la ecuación original, la expresión se transforma en:
+
+
+H(u, v ) = exp (u 2 + v 2 ) · κ = exp (distSq · κ)
+
+(32)
+
+(33)
+
+Esta sutil transformación algebraica permite sustituir una división de punto flotante de alta latencia por una
+multiplicación lineal, cuya ejecución a nivel de arquitectura de hardware (FPU) es hasta un orden de magnitud
+más rápida.
+7.2.1.
+
+Ejecución del filtro (run)
+
+cv :: Mat S u p e r C h a r g e d F i l t e r E n g i n e :: run ( const cv :: Mat & gray )
+{
+3
+gray . convertTo ( grayFloat , CV_32F ) ;
+4
+cv :: copyMakeBorder ( grayFloat , padded , 0 , optRows - gray . rows , 0 , optCols gray . cols ,
+5
+cv :: BORDER_CONSTANT , cv :: Scalar :: all (0) ) ;
+6
+cv :: dft ( padded , dftBuffer , cv :: DFT _C OM PL EX _O UT PU T ) ;
+7
+cv :: Mat planes [2];
+8
+cv :: split ( dftBuffer , planes ) ;
+9
+cv :: multiply ( planes [0] , precomputedMask , planes [0]) ;
+10
+cv :: multiply ( planes [1] , precomputedMask , planes [1]) ;
+11
+cv :: merge ( planes , 2 , dftBuffer ) ;
+12
+cv :: idft ( dftBuffer , idftOutput , cv :: DFT_SCALE | cv :: DFT_REAL_OUTPUT ) ;
+13
+cv :: Mat cropped = idftOutput ( cv :: Rect (0 , 0 , gray . cols , gray . rows ) ) ;
+14
+cv :: Mat output ;
+15
+cropped . convertTo ( output , CV_8U ) ;
+16
+return output ;
+17 }
+1
+2
+
+Listing 3: Ejecución completa del filtro
+La función run constituye el procesamiento propiamente dicho. Su diseño minimiza la latencia de procesamiento mediante tres pilares de optimización numérica: la simplificación de la aritmética compleja, el aprovechamiento del hardware a través de operaciones vectorizadas, y la reducción algorı́tmica de la transformada
+inversa.
+Simplificación Algebraica del Producto en Frecuencia (Cálculo Analı́tico)
+En el dominio de la frecuencia, la aplicación de un filtro lineal se define conceptualmente como el producto
+elemento a elemento entre el espectro de la imagen F (u, v ) y la función de transferencia del filtro H(u, v ):
+G (u, v ) = F (u, v ) · H(u, v )
+
+(34)
+
+Dado que el espectro transformado F (u, v ) es una señal compleja, se descompone en sus planos real e
+imaginario: F (u, v ) = R(u, v ) + j · I (u, v ). Si se implementara un filtro general de fase no lineal, H(u, v )
+23
+
+25.24 – Laboratorio de Electrónica 3
+también serı́a complejo (H = RH + j · IH ), obligando al procesador a realizar una multiplicación compleja
+completa por cada pı́xel:
+
+
+G (u, v ) = R(u, v )RH (u, v ) − I (u, v )IH (u, v ) + j · R(u, v )IH (u, v ) + I (u, v )RH (u, v )
+
+(35)
+
+Esta operación generalizada exige rigurosamente 4 multiplicaciones flotantes y 2 adiciones flotantes por
+cada coeficiente frecuencial.
+Sin embargo, dado que todas las máscaras diseñadas en el (precomputedMask) son de fase cero y puramente
+reales (H(u, v ) ∈ R), la ecuación se simplifica distributivamente a:
+
+
+G (u, v ) = H(u, v ) · R(u, v ) + j · H(u, v ) · I (u, v )
+
+(36)
+
+Esta sutil pero potente reducción algebraica disminuye el costo computacional a exactamente 2 multiplicaciones flotantes y 0 adiciones por pı́xel. Las lı́neas 9 y 10 del Listado 3 ejecutan esta operación de forma
+desacoplada aprovechando la estructura de datos segmentada por cv::split.
+Al invocar cv::multiply de manera independiente sobre planes[0] (R) y planes[1] (I ), se delega la
+tarea a instrucciones intrı́nsecas del procesador de tipo SIMD (Single Instruction Multiple Data).
+Convolución Lineal mediante Padding Óptimo
+Siendo que la multiplicación en el dominio de la frecuencia equivale a una convolución de carácter circular
+en el dominio espacial. Para que este proceso emule con total fidelidad a una convolución lineal (evitando el
+solapamiento o wrap-around), es necesario extender las dimensiones de la imagen mediante un rellenado de
+ceros (zero-padding ).
+Si bien teóricamente basta con expandir la matriz a un tamaño de (N + K − 1) × (M + L − 1) (siendo
+K × L el soporte espacial del filtro), el motor adopta una estrategia puramente orientada al rendimiento de la
+FFT Cooley-Tukey mediante la función cv::getOptimalDFTSize.
+El algoritmo de la FFT reduce la complejidad de la DFT de O(N 2 ) a O(N log N) descomponiendo la
+longitud de la señal en sus factores primos. Si la dimensión espacial de la imagen es un número primo grande,
+el rendimiento de la FFT se degrada crı́ticamente hacia el de una DFT directa. La función copyMakeBorder
+utiliza las dimensiones optRows y optCols, las cuales garantizan analı́ticamente que los tamaños de los vectores
+cumplan con la condición:
+Nóptimo = 2p · 3q · 5r
+
+para p, q, r ∈ N0
+
+(37)
+
+Al forzar que las dimensiones del buffer sean múltiplos perfectos de potencias de 2, 3 y 5, la subrutina
+interna de la FFT se ejecuta con la máxima eficiencia de hardware posible, compensando con creces el costo
+marginal en memoria de procesar una matriz ligeramente más grande.
+Reducción Simétrica de la Transformada Inversa (IDFT)
+La lı́nea 12 implementa una optimización crı́tica mediante el flag cv::DFT REAL OUTPUT. Teóricamente, la
+IDFT de un espectro bidimensional devuelve una matriz compleja. No obstante, existe una propiedad fundamental de simetrı́a conjugada en la transformada de Fourier: si la señal en el dominio espacial es puramente
+real (como lo es la imagen de entrada en escala de grises), su espectro cumple con la condición de simetrı́a
+hermı́tica:
+F (u, v ) = F ∗ (−u, −v )
+
+(38)
+
+Dado que nuestras funciones de transferencia H(u, v ) son reales y simétricas respecto al origen, el espectro
+filtrado G (u, v ) = F (u, v ) · H(u, v ) conserva estrictamente la simetrı́a hermı́tica. Al especificar formalmente
+el flag cv::DFT REAL OUTPUT, se le indica implı́citamente al algoritmo de la IDFT que descarte por completo
+el cálculo del plano imaginario de salida, puesto que analı́ticamente se sabe que su valor final es cero. Esta
+directiva reduce a la mitad el número de operaciones de sı́ntesis espectral y el consumo de ancho de banda de
+memoria durante la reconstrucción de la imagen filtrada. Finalmente, el recorte mediante cv::Rect reestablece
+las dimensiones geométricas originales de la señal libre de distorsiones perimetrales con un costo computacional
+nulo (O(1)).
+
+24
+
+25.24 – Laboratorio de Electrónica 3
+7.2.2.
+
+Funciones de API pública
+
+Cada función (p.ej. idealLowPass, gaussianHighPass) mantiene un static SuperChargedFilterEngine
+engine y cachea el size y los parámetros del filtro. De esta forma, si el tamaño y el corte no cambian, la
+máscara no se vuelve a recomputar, lo que ahorra O(N 2 ) operaciones.
+
+1
+2
+
+7.3.
+
+Filtros Espaciales
+
+7.3.1.
+
+Box Blur Q15
+
+cv :: Mat boxBlurQ15 ( const cv :: Mat & gray ) {
+CV_Assert ( gray . type () == CV_8UC1 ) ;
+
+3
+4
+
+cv :: Mat output ( gray . size () , CV_8UC1 ) ;
+
+5
+6
+7
+8
+
+constexpr int RADIUS = 2;
+constexpr int Q = 15;
+constexpr int ROUNDING = 1 << ( Q - 1) ;
+
+9
+10
+11
+
+constexpr int COEFF_BASE = 1311;
+constexpr int CE NTER_C ORRECT ION = 7;
+
+12
+13
+14
+
+const int rows = gray . rows ;
+const int cols = gray . cols ;
+
+15
+16
+17
+
+for ( int y = 0; y < rows ; y ++) {
+uint8_t * outRow = output . ptr < uint8_t >( y ) ;
+
+18
+19
+20
+
+for ( int x = 0; x < cols ; x ++) {
+int sum = 0;
+
+21
+22
+23
+
+for ( int ky = - RADIUS ; ky <= RADIUS ; ky ++) {
+int yy = y + ky ;
+
+24
+
+if ( yy
+yy
+} else
+yy
+}
+
+25
+26
+27
+28
+29
+
+< 0) {
+= 0;
+if ( yy >= rows ) {
+= rows - 1;
+
+30
+
+const uint8_t * inRow = gray . ptr < uint8_t >( yy ) ;
+
+31
+32
+
+for ( int kx = - RADIUS ; kx <= RADIUS ; kx ++) {
+int xx = x + kx ;
+
+33
+34
+35
+
+if ( xx
+xx
+} else
+xx
+}
+
+36
+37
+38
+39
+40
+
+< 0) {
+= 0;
+if ( xx >= cols ) {
+= cols - 1;
+
+41
+
+sum += inRow [ xx ];
+
+42
+
+}
+
+43
+44
+
+}
+
+45
+46
+
+int center = gray . ptr < uint8_t >( y ) [ x ];
+
+47
+48
+
+int32_t acc = COEFF_BASE * sum - CE NTER_C ORRECT ION * center ;
+
+49
+50
+
+int32_t value = ( acc + ROUNDING ) >> Q ;
+
+25
+
+25.24 – Laboratorio de Electrónica 3
+51
+
+if ( value
+value
+} else if
+value
+}
+
+52
+53
+54
+55
+56
+
+< 0) {
+= 0;
+( value > 255) {
+= 255;
+
+57
+
+outRow [ x ] = static_cast < uint8_t >( value ) ;
+
+58
+
+}
+
+59
+
+}
+
+60
+61
+
+return output ;
+
+62
+63
+
+}
+
+Listing 4: Implementación de boxBlurQ15
+Deducción Analı́tica de las Constantes Mágicas (Q15)
+El formato de punto fijo Q15 representa un número fraccionario utilizando 1 bit de signo y 15 bits para la
+parte fraccionaria. Por lo tanto, el factor de escala o ’unidad teórica’ en este dominio equivale a:
+215 = 32768
+
+(39)
+
+El objetivo es emular la división por 25 mediante una multiplicación entera seguida de un desplazamiento
+a la derecha de 15 bits (≫ 15). Matemáticamente, buscamos un coeficiente entero C tal que:
+
+
+sum
+C · sum
+32768
+≈
+= ⌊1310.72⌉ = 1311
+(40)
+=⇒ C =
+25
+25
+215
+El redondeo simétrico al entero más cercano produce C = 1311, el cual se define en el código como
+COEFF BASE. No obstante, este redondeo introduce un error de truncamiento sistemático, ya que:
+1311
+1
+≈ 0.04000854 ←→
+= 0.04
+(41)
+32768
+25
+El coeficiente adoptado sobreestima el valor promedio real por un factor de residuo unitario ϵ = 0.00000854.
+Al procesar una ventana completa de 25 pı́xeles idénticos de intensidad máxima (I = 255, es decir, una región
+homogénea), la acumulación del error de truncamiento se cuantifica a mano como:
+Erroracumulado = 25 × 1311 = 32775
+
+(42)
+
+Dado que el valor ideal esperado tras el escalado en el dominio Q15 deberı́a ser exactamente la unidad
+escalar 32768, se observa una ganancia excedente pura de:
+∆ = 32775 − 32768 = 7
+
+(43)
+
+Este exceso numérico destruirı́a la ganancia unitaria del sistema, provocando que la imagen se sature
+progresivamente o incremente su brillo de forma artificial frame tras frame. Para contrarrestar esta desviación
+matemática y garantizar que la ganancia de continua sea exactamente igual a 1, el código introduce un factor
+de estabilización denominado CENTER CORRECTION (7), restándole dicho valor ponderado directamente al pı́xel
+central. La ecuación algebraica final del acumulador (acc) antes del escalado responde formalmente a:
+acc = 1311 ·
+
+25
+X
+
+Ii − 7 · Icentral
+
+(44)
+
+i=1
+
+Si la región es perfectamente homogénea (Ii = Icentral = I ), la ecuación se simplifica analı́ticamente
+validando la conservación de la energı́a:
+acc = (1311 × 25 − 7) · I = (32775 − 7) · I = 32768 · I = 215 · I
+26
+
+(45)
+
+25.24 – Laboratorio de Electrónica 3
+Al realizar el desplazamiento de bits posterior, el valor recuperado es exactamente I , demostrando una
+ganancia de continua idéntica a la unidad (GDC = 1.0) y libre de errores de sesgo.
+Redondeo y Saturación
+En lugar de efectuar un truncamiento directo mediante el operador de desplazamiento (≫ 15), el cual introduce
+un error hacia el infinito negativo, el algoritmo implementa un redondeo convergente sumando el bit de menor
+peso intermedio. Esta constante se calcula teóricamente como la mitad del valor del escalón divisor en Q15:
+ROUNDING = 2Q−1 = 214 = 16384
+
+(1 ≪ 14)
+
+(46)
+
+La adición de ROUNDING asegura numéricamente que si la parte fraccionaria del resultado es mayor o igual
+a 0.5, el valor se redondee al entero inmediatamente superior, emulando la función matemática std::round()
+con un costo de ejecución nulo en CPU.
+Finalmente, las lı́neas de control perimetral (if (value <0) ... else if (value >255)) implementan
+una etapa de saturación aritmética (clamping ).
+7.3.2.
+1
+2
+
+Laplaciano 3×3
+
+cv :: Mat laplacian3x3 ( const cv :: Mat & gray ) {
+CV_Assert ( gray . type () == CV_8UC1 ) ;
+
+3
+4
+
+cv :: Mat output ( gray . size () , CV_8UC1 ) ;
+
+5
+6
+7
+
+const int rows = gray . rows ;
+const int cols = gray . cols ;
+
+8
+9
+10
+
+for ( int y = 0; y < rows ; y ++) {
+uint8_t * outRow = output . ptr < uint8_t >( y ) ;
+
+11
+12
+13
+14
+15
+16
+
+for ( int x = 0; x < cols ; x ++) {
+int yUp = y - 1;
+int yDown = y + 1;
+int xLeft = x - 1;
+int xRight = x + 1;
+
+17
+18
+19
+20
+
+if ( yUp < 0) {
+yUp = 0;
+}
+
+21
+22
+23
+24
+
+if ( yDown >= rows ) {
+yDown = rows - 1;
+}
+
+25
+26
+27
+28
+
+if ( xLeft < 0) {
+xLeft = 0;
+}
+
+29
+30
+31
+32
+
+if ( xRight >= cols ) {
+xRight = cols - 1;
+}
+
+33
+34
+35
+36
+
+const uint8_t * rowUp = gray . ptr < uint8_t >( yUp ) ;
+const uint8_t * rowCenter = gray . ptr < uint8_t >( y ) ;
+const uint8_t * rowDown = gray . ptr < uint8_t >( yDown ) ;
+
+37
+38
+39
+40
+41
+
+int
+int
+int
+int
+
+center = rowCenter [ x ];
+up = rowUp [ x ];
+down = rowDown [ x ];
+left = rowCenter [ xLeft ];
+
+27
+
+25.24 – Laboratorio de Electrónica 3
+int right = rowCenter [ xRight ];
+
+42
+43
+
+int value = 4 * center - up - down - left - right ;
+
+44
+45
+
+// Valor absoluto : muestra bordes positivos y negativos
+if ( value < 0) {
+value = - value ;
+}
+
+46
+47
+48
+49
+50
+
+// S a t u r a c i n a rango de imagen
+if ( value > 255) {
+value = 255;
+}
+
+51
+52
+53
+54
+55
+
+outRow [ x ] = static_cast < uint8_t >( value ) ;
+
+56
+
+}
+
+57
+
+}
+
+58
+59
+
+return output ;
+
+60
+61
+
+}
+
+62
+63
+
+}
+
+Listing 5: Laplaciano 3×3
+
+7.3.3.
+1
+2
+
+Sharpening 3×3
+
+cv :: Mat sharpening3x3 ( const cv :: Mat & gray ) {
+CV_Assert ( gray . type () == CV_8UC1 ) ;
+
+3
+4
+
+cv :: Mat output ( gray . size () , CV_8UC1 ) ;
+
+5
+6
+7
+
+const int rows = gray . rows ;
+const int cols = gray . cols ;
+
+8
+9
+10
+11
+12
+
+// Intensidad del sharpening .
+// alpha = 1 -> kernel [0 -1 0; -1 5 -1; 0 -1 0]
+// alpha = 2 -> kernel [0 -2 0; -2 9 -2; 0 -2 0]
+constexpr int alpha = 2;
+
+13
+14
+15
+
+const int centerCoeff = 1 + 4 * alpha ;
+const int neighborCoeff = alpha ;
+
+16
+17
+18
+
+for ( int y = 0; y < rows ; y ++) {
+uint8_t * outRow = output . ptr < uint8_t >( y ) ;
+
+19
+20
+21
+22
+23
+24
+
+for ( int x = 0; x < cols ; x ++) {
+int yUp = y - 1;
+int yDown = y + 1;
+int xLeft = x - 1;
+int xRight = x + 1;
+
+25
+26
+27
+28
+29
+
+// R e p l i c a c i n de bordes
+if ( yUp < 0) {
+yUp = 0;
+}
+
+30
+31
+32
+
+if ( yDown >= rows ) {
+yDown = rows - 1;
+
+28
+
+25.24 – Laboratorio de Electrónica 3
+}
+
+33
+34
+
+if ( xLeft < 0) {
+xLeft = 0;
+}
+
+35
+36
+37
+38
+
+if ( xRight >= cols ) {
+xRight = cols - 1;
+}
+
+39
+40
+41
+42
+
+const uint8_t * rowUp = gray . ptr < uint8_t >( yUp ) ;
+const uint8_t * rowCenter = gray . ptr < uint8_t >( y ) ;
+const uint8_t * rowDown = gray . ptr < uint8_t >( yDown ) ;
+
+43
+44
+45
+46
+
+int
+int
+int
+int
+int
+
+47
+48
+49
+50
+51
+
+center = rowCenter [ x ];
+up = rowUp [ x ];
+down = rowDown [ x ];
+left = rowCenter [ xLeft ];
+right = rowCenter [ xRight ];
+
+52
+
+int value =
+centerCoeff * center
+- neighborCoeff * up
+- neighborCoeff * down
+- neighborCoeff * left
+- neighborCoeff * right ;
+
+53
+54
+55
+56
+57
+58
+59
+
+// S a t u r a c i n a rango uint8_t
+if ( value < 0) {
+value = 0;
+} else if ( value > 255) {
+value = 255;
+}
+
+60
+61
+62
+63
+64
+65
+66
+
+outRow [ x ] = static_cast < uint8_t >( value ) ;
+
+67
+
+}
+
+68
+
+}
+
+69
+70
+
+return output ;
+
+71
+72
+
+}
+
+Listing 6: Sharpening 3×3
+
+29
+
+

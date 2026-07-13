@@ -1,53 +1,35 @@
 # VideoDSP — Procesamiento de video en tiempo real (TP Final Labo 3)
 
-Proyecto de procesamiento digital de señales (2D) sobre video en vivo. Combina:
+El presente proyecto corresponde al trabajo final de la materia Laboratorio de Electrónica III (25.24). A lo largo del mismo del mismo se desarrolla un sistema de procesamiento digital de señales de video en tiempo real utilizando una webcam, Python/OpenCV y una estructura de procesamiento basada en C++.
+En este tratamiento cada frame adquirido es tratado como una se˜nal bidimensional discreta, sobre la cual se implementan filtros digitales espaciales y frecuenciales. De este modo, el sistema permite aplicar distintos efectos de procesamiento, tales como suavizado, realce de bordes, filtrado pasa-bajos/pasa-altos y eliminación de interferencias periódicas mediante filtros notch en el dominio de la FFT 2D.
 
-- Un programa en **C++/OpenCV** que captura la cámara y aplica filtros en tiempo real.
-- Un set de scripts en **Python** para prototipar y validar los filtros (respuesta en frecuencia, cuantización) antes de llevarlos al código en tiempo real.
+![alt text](Messi_procesado.png)
 
-La idea general del TP: diseñar un filtro espacial (kernel), cuantizarlo a punto fijo (para que sea barato de correr en tiempo real), validar en Python que la cuantización no rompe la respuesta en frecuencia deseada, y después correrlo en C++ sobre el video de la cámara.
-
-## Estado actual
-
-### C++ (`src/`, `include/`) — pipeline de video en tiempo real
-
-- **`Camera`** (`camera.hpp/.cpp`): wrapper de `cv::VideoCapture`. Abre la cámara por índice y fija ancho/alto.
-- **`VideoProcessor`** (`videoProcessor.hpp/.cpp`): convierte el frame a escala de grises y despacha según el `mode`:
-  - `mode 0`: gris sin procesar.
-  - `mode 1`: box blur 5x5 en Q1.15 (`SpatialFilters::boxBlurQ15`).
-- **`SpatialFilters::boxBlurQ15`** (`spatialFilters.cpp`): convolución 5x5 manual, en aritmética de punto fijo Q1.15 (coeficientes `int16_t`, acumulador `int32_t`, `border = clamp` / replicación de borde). El kernel está corregido en DC para que la suma dé exactamente `2^15`.
-- **`main.cpp`**: loop principal — muestra `Original` y `Procesado`, y permite cambiar de modo con las teclas `0`/`1`, salir con `q` o `ESC`.
-- **`frequencyFilters.cpp`**: **vacío, todavía no implementado**. Es el próximo paso natural (ver Roadmap).
-
-### Python (`python/`) — prototipado y validación (offline, no tiempo real)
-
-- **`kernels.py`**: genera el kernel box blur en float, y lo cuantiza a Q1.15 (`quantize_q15`), devolviendo tanto los coeficientes enteros como la reconstrucción en float para comparar el error de cuantización.
-- **`frequency_response.py`**: calcula la respuesta en frecuencia 2D de un kernel vía FFT (con zero-padding a `fft_size`), y tiene helpers para graficar el kernel espacial, el mapa de magnitud en dB, y un corte central `H(ωx, ωy=0)`.
-- **`test_kernels.py`**: script "main" que ata todo: genera el kernel, lo cuantiza, imprime el error de cuantización, y grafica kernel + respuesta en frecuencia (float vs. Q1.15) para comparar visualmente.
-
-**En criollo:** el flujo pensado es *Python decide el filtro y valida que la cuantización no lo arruina* → *C++ lo corre en vivo sobre la cámara*. Hoy sólo existe el filtro espacial (box blur); el filtrado en frecuencia todavía no se trasladó a C++.
-
-## Estructura del repo
+## Estructura del repositorio
 
 ```
 .
+├── .gitignore
+├── .vs/
+├── .vscode/
 ├── CMakeLists.txt
 ├── CMakePresets.json
+├── Informe.pdf          # Informe del proyecto
+├── Messi.jpg            # Imagen ilustrativa
+├── README.md
+├── WindowsSetUp.md
+├── build/               # Directorio de salida de la compilación (CMake)
 ├── include/
 │   ├── camera.hpp
 │   ├── spatialFilters.hpp
 │   └── videoProcessor.hpp
+├── out/                 # Archivos de salida temporales
 ├── src/
 │   ├── main.cpp
 │   ├── camera.cpp
 │   ├── videoProcessor.cpp
 │   ├── spatialFilters.cpp
-│   └── frequencyFilters.cpp     # vacío, placeholder
-└── python/
-    ├── kernels.py
-    ├── frequency_response.py
-    ├── test_kernels.py
-    └── requirements.txt
+│   └── frequencyFilters.cpp
 ```
 
 ## Requisitos
@@ -127,12 +109,6 @@ cmake --build build
    build\Debug\VideoDSP.exe
    ```
 
-### Controles en ejecución
-
-- `0`: ver original en gris
-- `1`: ver box blur 5x5 Q1.15
-- `q` / `ESC`: salir
-
 ## Trabajar desde VS Code (Windows)
 
 Para no tener que abrir la terminal especial de Visual Studio cada vez:
@@ -146,30 +122,3 @@ Para no tener que abrir la terminal especial de Visual Studio cada vez:
 7. `F5` compila y corre con el debugger conectado.
 
 En Linux/macOS los mismos pasos aplican pero eligiendo el preset `default` y cualquier kit de GCC/Clang detectado.
-
-### Python (prototipado offline)
-
-```bash
-cd python
-pip install -r requirements.txt
-python test_kernels.py
-```
-
-Esto imprime el kernel float, su versión Q1.15, el error de cuantización, y abre las figuras de respuesta en frecuencia.
-
-## Roadmap / cómo seguir
-
-1. **Implementar `frequencyFilters.cpp`**: llevar al C++ un filtrado en el dominio de la frecuencia (FFT2D con OpenCV `cv::dft`), análogo a lo que hoy sólo se prototipa en `frequency_response.py`. Definir si va a ser un filtro pasa-bajos/pasa-altos configurable, y agregar un nuevo `mode` en `VideoProcessor::process` para probarlo en vivo.
-2. **Generalizar `boxBlurQ15`**: hoy el kernel 5x5 y el formato Q1.15 están hardcodeados. Se podría parametrizar tamaño de kernel y formato Qm.n, reusando `python/kernels.py` para generar los coeficientes y pegarlos (o cargarlos desde archivo) en C++.
-3. **Puente Python ↔ C++**: hoy son dos mundos separados (Python prototipa, C++ corre). Una mejora es exportar los coeficientes cuantizados desde Python a un archivo (`.h` o `.json`) que C++ lea, para no tener que copiar números a mano entre `kernels.py` y `spatialFilters.cpp`.
-4. **Portabilidad de cámara**: `Camera` abre por índice fijo (0) y fuerza resolución 640x480; estaría bueno loguear si el `set()` de resolución realmente fue aceptado por el driver, y permitir elegir cámara/resolución por línea de comandos.
-5. **Tests**: no hay tests automatizados ni en C++ ni en Python. Al menos para `kernels.py`/`frequency_response.py` (que son puramente numéricos) sería fácil agregar unit tests con `pytest`.
-6. **CI opcional**: si el repo va a vivir en GitHub, un workflow simple que compile el C++ (con OpenCV vía apt) y corra los tests de Python en cada push ayudaría a detectar roturas de portabilidad como las que motivaron este README.
-
-## Notas de portabilidad (qué se corrigió)
-
-- `CMakeLists.txt`: se sacó el `set(OpenCV_DIR "C:/Users/palom/...")` hardcodeado. Ahora `find_package(OpenCV REQUIRED)` busca la instalación del sistema.
-- `CMakePresets.json`: nuevo. Define un preset `default` (Linux/macOS, OpenCV del sistema) y `windows-vcpkg` (Windows, MSVC + vcpkg vía la variable de entorno `VCPKG_ROOT`, sin rutas hardcodeadas de ninguna PC en particular).
-- `src/camera.cpp`: `cv::CAP_DSHOW` sólo se usa si se compila en Windows (`#ifdef _WIN32`); en otras plataformas se abre la cámara con el backend por defecto de OpenCV.
-- `.vscode/launch.json`: se cambiaron las rutas absolutas (`c:/Users/palom/Desktop/TPFINAL_LABO3`) por `${workspaceFolder}`, que es la carpeta del proyecto abierta en VSCode, sea cual sea la compu.
-- `.vscode/settings.json`: quedó tal cual porque es específico de la extensión C_Cpp_Runner y de tu toolchain local (esto no rompe el build con CMake de línea de comandos; si otra persona usa otro compilador/IDE, puede ignorar esta carpeta sin problema).
